@@ -1,71 +1,106 @@
 {
-  "name": "extensible-duck",
-  "version": "1.3.1",
-  "description": "Modular and Extensible Redux Reducer Bundles (ducks-modular-redux)",
-  "main": "dist/extensible-duck.js",
+  "name": "adux",
+  "version": "0.0.1",
+  "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
+  "main": "lib/index.js",
+  "module": "es/index.js",
+  "jsnext:main": "es/index.js",
   "scripts": {
-    "test": "gulp",
-    "lint": "gulp lint",
-    "test-browser": "gulp test-browser",
-    "watch": "gulp watch",
-    "build": "gulp build",
-    "precommit": "lint-staged",
-    "prettier": "prettier --no-semi --single-quote --trailing-comma es5 --write '{src,test}/**/*.js'",
-    "coverage": "gulp coverage"
-  },
-  "lint-staged": {
-    "**/{src,test}/**/*.js": [
-      "prettier --no-semi --single-quote --trailing-comma es5 --write",
-      "git add"
-    ]
+    "clean": "rimraf lib dist es coverage",
+    "lint": "eslint src test build",
+    "test": "cross-env BABEL_ENV=commonjs jest",
+    "test:watch": "npm test -- --watch",
+    "test:cov": "npm test -- --coverage",
+    "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
+    "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
+    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/adux.js",
+    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/adux.min.js",
+    "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
+    "prepare": "npm run clean && npm run lint && npm test && npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/investtools/extensible-duck.git"
+    "url": "https://github.com/Attainia/adux.git"
   },
-  "keywords": [],
-  "author": "Andre Aizim Kelmanosn <akelmanson@gmail.com>",
+  "keywords": [
+    "attainia",
+    "javascript",
+    "ramda",
+    "redux",
+    "reducer",
+    "machine",
+    "state",
+    "saga",
+    "selector",
+    "creator",
+    "types",
+    "adux",
+    "ducks",
+    "duck",
+    "dux"
+  ],
+  "authors": "David Nunez <david.nunez@attainia.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/investtools/extensible-duck/issues"
+  "dependencies": {
+    "ramda": "0.24.1",
+    "spected": "0.6.0"
   },
-  "homepage": "https://github.com/investtools/extensible-duck",
   "devDependencies": {
-    "babel-cli": "6.24.1",
-    "babel-core": "6.25.0",
-    "babel-eslint": "7.2.3",
-    "babel-loader": "7.1.1",
-    "babel-plugin-transform-object-rest-spread": "6.23.0",
-    "babel-polyfill": "6.23.0",
-    "babel-preset-es2015": "6.24.1",
-    "babel-register": "6.24.1",
-    "chai": "3.5.0",
-    "del": "2.2.2",
-    "glob": "7.0.6",
-    "gulp": "3.9.1",
-    "gulp-eslint": "3.0.1",
-    "gulp-filter": "4.0.0",
-    "gulp-istanbul": "1.1.1",
-    "gulp-livereload": "3.8.1",
-    "gulp-load-plugins": "1.2.4",
-    "gulp-mocha": "3.0.1",
-    "gulp-plumber": "1.1.0",
-    "gulp-rename": "1.2.2",
-    "gulp-sourcemaps": "2.6.0",
-    "gulp-uglify": "3.0.0",
-    "isparta": "4.0.0",
-    "json-loader": "0.5.4",
-    "lint-staged": "4.0.2",
-    "mocha": "3.0.2",
-    "prettier": "1.5.3",
-    "reselect": "^3.0.1",
-    "sinon": "1.17.5",
-    "sinon-chai": "2.8.0",
-    "webpack": "3.2.0",
-    "webpack-stream": "3.2.0"
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.0.1",
+    "babel-jest": "^21.2.0",
+    "babel-plugin-check-es2015-constants": "^6.3.13",
+    "babel-plugin-ramda": "1.4.3",
+    "babel-plugin-syntax-async-functions": "6.13.0",
+    "babel-plugin-transform-es2015-arrow-functions": "^6.3.13",
+    "babel-plugin-transform-es2015-block-scoped-functions": "^6.3.13",
+    "babel-plugin-transform-es2015-block-scoping": "^6.26.0",
+    "babel-plugin-transform-es2015-classes": "^6.3.13",
+    "babel-plugin-transform-es2015-computed-properties": "^6.3.13",
+    "babel-plugin-transform-es2015-destructuring": "^6.3.13",
+    "babel-plugin-transform-es2015-for-of": "^6.3.13",
+    "babel-plugin-transform-es2015-function-name": "^6.3.13",
+    "babel-plugin-transform-es2015-literals": "^6.3.13",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-plugin-transform-es2015-object-super": "^6.3.13",
+    "babel-plugin-transform-es2015-parameters": "^6.3.13",
+    "babel-plugin-transform-es2015-shorthand-properties": "^6.3.13",
+    "babel-plugin-transform-es2015-spread": "^6.3.13",
+    "babel-plugin-transform-es2015-sticky-regex": "^6.3.13",
+    "babel-plugin-transform-es2015-template-literals": "^6.3.13",
+    "babel-plugin-transform-es2015-unicode-regex": "^6.3.13",
+    "babel-plugin-transform-es3-member-expression-literals": "^6.5.0",
+    "babel-plugin-transform-es3-property-literals": "^6.5.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-register": "^6.26.0",
+    "cross-env": "^5.1.0",
+    "eslint": "^4.9.0",
+    "eslint-config-airbnb-base": "11.3.2",
+    "eslint-plugin-flowtype": "^2.39.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "glob": "^7.1.1",
+    "jest": "^21.2.1",
+    "rimraf": "^2.6.2",
+    "rollup": "^0.50.0",
+    "rollup-plugin-async": "1.2.0",
+    "rollup-plugin-babel": "^3.0.2",
+    "rollup-plugin-commonjs": "8.2.6",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-uglify": "^2.0.1"
   },
-  "babelBoilerplateOptions": {
-    "entryFileName": "extensible-duck.js",
-    "mainVarName": "Duck"
+  "npmName": "adux",
+  "npmFileMap": [
+    {
+      "basePath": "/dist/",
+      "files": [
+        "*.js"
+      ]
+    }
+  ],
+  "jest": {
+    "testRegex": "(/test/.*\\.spec.js)$"
   }
 }
