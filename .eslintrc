@@ -32,6 +32,7 @@
     "newline-before-return": "off",
     "no-console": "error",
     "no-eval": "error",
+    "no-plusplus": "off",
     "no-trailing-spaces": [
       "error",
       {

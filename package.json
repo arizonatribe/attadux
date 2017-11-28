@@ -1,5 +1,5 @@
 {
-  "name": "adux",
+  "name": "attadux",
   "version": "0.0.1",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
   "main": "lib/index.js",
@@ -8,22 +8,21 @@
   "scripts": {
     "clean": "rimraf lib dist es coverage",
     "lint": "eslint src test build",
-    "test": "cross-env BABEL_ENV=commonjs jest",
-    "test:watch": "npm test -- --watch",
-    "test:cov": "npm test -- --coverage",
+    "test": "cross-env BABEL_ENV=commonjs babel-node test | faucet",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/adux.js",
-    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/adux.min.js",
+    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/attadux.js",
+    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/attadux.min.js",
     "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
     "prepare": "npm run clean && npm run lint && npm test && npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Attainia/adux.git"
+    "url": "https://github.com/Attainia/attadux.git"
   },
   "keywords": [
     "attainia",
+    "attadux",
     "javascript",
     "ramda",
     "redux",
@@ -34,7 +33,6 @@
     "selector",
     "creator",
     "types",
-    "adux",
     "ducks",
     "duck",
     "dux"
@@ -74,12 +72,15 @@
     "babel-plugin-transform-es3-property-literals": "^6.5.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-register": "^6.26.0",
+    "babel-tape-runner": "2.0.1",
+    "chalk": "2.3.0",
     "cross-env": "^5.1.0",
     "eslint": "^4.9.0",
     "eslint-config-airbnb-base": "11.3.2",
     "eslint-plugin-flowtype": "^2.39.1",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^5.1.1",
+    "faucet": "0.0.1",
     "glob": "^7.1.1",
     "jest": "^21.2.1",
     "rimraf": "^2.6.2",
@@ -89,9 +90,10 @@
     "rollup-plugin-commonjs": "8.2.6",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-replace": "^2.0.0",
-    "rollup-plugin-uglify": "^2.0.1"
+    "rollup-plugin-uglify": "^2.0.1",
+    "tape": "4.8.0"
   },
-  "npmName": "adux",
+  "npmName": "attadux",
   "npmFileMap": [
     {
       "basePath": "/dist/",

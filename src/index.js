@@ -3,6 +3,7 @@ import {
     anyPass,
     complement,
     compose,
+    concat,
     converge,
     either,
     forEach,
@@ -13,8 +14,9 @@ import {
     keys,
     last,
     memoize,
-    mergeDeepRight,
+    mergeDeepWith,
     not,
+    pick,
     pickBy,
     reduce,
     toPairs,
@@ -26,8 +28,10 @@ import spected from 'spected'
 const duxDefaults = {
     consts: {},
     creators: (() => ({})),
+    machines: {},
     selectors: {},
-    types: []
+    types: [],
+    validators: {}
 }
 const invokeIfFn = (context, fn) => (is(Function, fn) ? fn(context) : fn)
 const createExtender = (context, options) =>
@@ -35,9 +39,9 @@ const createExtender = (context, options) =>
         if (is(Function, options[key])) {
             return {
                 [key]: duck => ({
-                    ...context.options[key],
-                    ...options[key](duck)}
-                )
+                    ...invokeIfFn(duck, context.options[key]),
+                    ...options[key](duck, invokeIfFn(duck, context.options[key]))
+                })
             }
         } else if (isNil(options[key])) {
             return {[key]: context.options[key]}
@@ -54,10 +58,13 @@ const createMachineStates = (machine = {}, {types} = {}) => {
         .filter(([state, transitions]) =>
             is(String, state)
             && values(transitions).every(st => is(String, st) && has(st, machine))
-            && keys(transitions).every(at => is(String, at) && values(types).includes(at))
+            && keys(transitions).some(at => is(String, at) && values(types).includes(at))
         )
         .forEach(([state, transitions]) => {
-            validStates[state] = transitions
+            validStates[state] = pick(
+                keys(transitions).filter(at => is(String, at) && values(types).includes(at)),
+                transitions
+            )
         })
 
     return Object.freeze(validStates)
@@ -69,6 +76,7 @@ const createMachines = (machines = {}, context = {}) => {
     })
     return Object.freeze(validMachines)
 }
+
 export const isNotNil = complement(isNil)
 export const isNotBlankString = s => not(/^\s*$/.test(s))
 export const isStringieThingie = allPass([
@@ -177,8 +185,8 @@ export default class Duck {
         this.validators = Object.freeze(invokeIfFn(this, validators))
         this.initialState = invokeIfFn(this, initialState)
         this.machines = createMachines(invokeIfFn(this, machines), this)
-        this.creators = invokeIfFn(this, creators)
         this.selectors = deriveSelectors(invokeIfFn(this, selectors))
+        this.creators = invokeIfFn(this, creators)
         this.reducer = this.reducer.bind(this)
         this.getNextState = (machineName = '') =>
             (currentState = '', {type = ''} = {}) => {
@@ -190,12 +198,12 @@ export default class Duck {
     }
 
 
-    reducer(state = {}, action = {}) {
+    reducer(state, action = {}) {
         return this.options.reducer(isNil(state) ? this.initialState : state, action, this)
     }
 
     extend(options = {}) {
-        const opts = {...duxDefaults, ...invokeIfFn(options)}
+        const opts = {...duxDefaults, ...invokeIfFn(this, options)}
         const parent = this.options
         const extendProp = createExtender(this, opts)
 
@@ -208,12 +216,12 @@ export default class Duck {
             ...extendProp('selectors'),
             ...extendProp('creators'),
             types: [...parent.types, ...opts.types],
-            consts: mergeDeepRight(parent.consts, opts.consts),
+            consts: mergeDeepWith(concat, parent.consts, opts.consts),
             reducer: (state, action, duck) => {
-                const reduced = parent.reducer(state, action, duck)
+                const reduced = parent.reducer(isNil(state) ? duck.initialState : state, action, duck)
                 return (isNil(opts.reducer)) ? reduced : opts.reducer(reduced, action, duck)
             }
-      })
+        })
     }
 }
 

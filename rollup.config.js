@@ -9,7 +9,7 @@ const env = process.env.NODE_ENV
 const config = {
   output: {
     format: 'umd',
-    name: 'adux',
+    name: 'attadux',
     exports: 'named'
   },
   plugins: [
