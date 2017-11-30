@@ -208,6 +208,70 @@ test('cannot overwrite a constant', (t) => {
     t.end()
 })
 
+test('state machines:', (t) => {
+    const auth = {
+        initial: {
+            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
+            'attadux/auth/LOGIN_ERROR': 'error'
+        },
+        loggedIn: {
+            'attadux/auth/LOGOUT_SUCCESSFUL': 'initial',
+            'attadux/auth/LOGOUT_ERROR': 'error'
+        },
+        loggedOut: {
+            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
+            'attadux/auth/LOGIN_ERROR': 'error'
+        },
+        error: {
+            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
+            'attadux/auth/LOGOUT_SUCCESSFUL': 'loggedOut'
+        }
+    }
+    t.test('...which correspond to valid redux action types', (nt) => {
+        const duck = new Duck({
+            namespace: 'attadux',
+            store: 'auth',
+            types: ['LOGIN_SUCCESSFUL', 'LOGIN_ERROR', 'LOGOUT_SUCCESSFUL', 'LOGOUT_ERROR'],
+            machines: {auth}
+        })
+        nt.deepEqual(duck.machines.auth, auth)
+        nt.end()
+    })
+
+    const machines = ({types}) => ({
+        auth: {
+            initial: {
+                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
+                [types.LOGIN_ERROR]: 'error'
+            },
+            loggedIn: {
+                [types.LOGOUT_SUCCESSFUL]: 'initial',
+                [types.LOGOUT_ERROR]: 'error'
+            },
+            loggedOut: {
+                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
+                [types.LOGIN_ERROR]: 'error'
+            },
+            error: {
+                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
+                [types.LOGOUT_SUCCESSFUL]: 'loggedOut'
+            }
+        }
+    })
+    t.test('...which can access the action types directly from the duck', (nt) => {
+        const duck = new Duck({
+            namespace: 'attadux',
+            store: 'auth',
+            types: ['LOGIN_SUCCESSFUL', 'LOGIN_ERROR', 'LOGOUT_SUCCESSFUL', 'LOGOUT_ERROR'],
+            machines
+        })
+        nt.deepEqual(duck.machines.auth, auth)
+        nt.end()
+    })
+
+    t.end()
+})
+
 test('lets the creators access the selectors', (t) => {
     const duck = new Duck({
         selectors: {
