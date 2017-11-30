@@ -37,7 +37,10 @@
     "duck",
     "dux"
   ],
-  "authors": "David Nunez <david.nunez@attainia.com>",
+  "authors": [
+    "Andre Aizim Kelmanosn (pre-fork author) <akelmanson@gmail.com>",
+    "David Nunez <david.nunez@attainia.com>"
+  ],
   "license": "MIT",
   "dependencies": {
     "ramda": "0.24.1",
