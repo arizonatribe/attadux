@@ -1,5 +1,21 @@
 import test from 'tape'
-import Duck, {createSelector, Selector} from '../src'
+import Duck, {duxDefaults} from '../src/Duck'
+import Selector from '../src/Selector'
+import {createSelector} from '../src/helpers'
+
+test('default values for all options have not changed', (t) => {
+    t.deepEqual({
+            consts: {},
+            creators: {},
+            machines: {},
+            selectors: {},
+            types: [],
+            validators: {}
+        },
+        duxDefaults
+    )
+    t.end()
+})
 
 test('transforms types in object with prefix', (t) => {
     t.deepEqual(
@@ -16,7 +32,7 @@ test('transforms types in object with prefix', (t) => {
 test('lets the creators reference the duck instance', (t) => {
     const duck = new Duck({
         types: ['FETCH'],
-        creators: ({ types }) => ({
+        creators: ({types}) => ({
           get: id => ({type: types.FETCH, id})
         })
     })
@@ -224,18 +240,21 @@ test('appends the new reducers', (t) => {
 
 test('lets the reducers access the parents', (t) => {
     const d1 = new Duck({
+        types: ['LOREM'],
         creators: () => ({
             get: () => ({d1: true})
         })
     })
     const d2 = d1.extend({
+        types: ['IPSUM'],
         creators: (duck, parent) => ({
-            get: () => ({...parent.get(duck), d2: true})
+            get: () => ({...(parent || {get: () => true}).get(duck), d2: true})
         })
     })
     const d3 = d2.extend({
+        types: ['DOLOR', 'SIT', 'AMET'],
         creators: (duck, parent) => ({
-            get: () => ({...parent.get(duck), d3: true})
+            get: () => ({...(parent || {get: () => true}).get(duck), d3: true})
         })
     })
     t.deepEqual(d3.creators.get(), {d1: true, d2: true, d3: true})
