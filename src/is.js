@@ -1,5 +1,7 @@
-import {allPass, anyPass, complement, either, is, isNil, not} from 'ramda'
+import {allPass, anyPass, complement, compose, defaultTo, either, has, is, isNil, not, path, toString} from 'ramda'
 import Selector from './Selector'
+
+const coerceToString = val => (is(String, val) ? val : toString(val))
 
 export const isDuxSelector = selector => (selector instanceof Selector)
 export const isNotNil = complement(isNil)
@@ -15,3 +17,9 @@ export const isPrimitive = anyPass([
     is(String),
     is(Date)
 ])
+export const isTransitionPossible = (transitionName, currentState, machine) =>
+    compose(
+        has(coerceToString(transitionName)),
+        defaultTo({}),
+        path([coerceToString(currentState)])
+    )(machine)

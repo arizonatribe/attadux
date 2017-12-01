@@ -1,5 +1,6 @@
-import {concat, has, isNil, mergeDeepWith, zipObj} from 'ramda'
+import {concat, is, isNil, mergeDeepWith, zipObj} from 'ramda'
 import {invokeIfFn, createConstants, createMachines, createExtender, deriveSelectors} from './helpers'
+import {isTransitionPossible} from './is'
 import Selector from './Selector'
 
 export const duxDefaults = {
@@ -37,10 +38,10 @@ class Duck {
         this.reducer = this.reducer.bind(this)
         this.getNextState = (machineName = '') =>
             (currentState = '', {type = ''} = {}) => {
-                if (type && has(type, this.machines[machineName][currentState])) {
+                if (isTransitionPossible(type, currentState, this.machines[machineName])) {
                     return this.machines[machineName][currentState][type]
                 }
-                return currentState
+                return is(String, currentState) ? currentState : null
             }
     }
 

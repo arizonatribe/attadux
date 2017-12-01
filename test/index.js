@@ -217,7 +217,7 @@ test('state machines:', (t) => {
         currentState: 'initial'
     }
     const types = [
-        'ATTEMPTING_LOGIN',
+        'ATTEMPT_LOGIN',
         'ATTEMPT_LOGOUT',
         'CLEAR_ERROR',
         'LOGIN_SUCCESSFUL',
@@ -231,25 +231,25 @@ test('state machines:', (t) => {
             case dux.types.ATTEMPT_LOGIN:
                 return {
                     ...state,
-                    currentState: dux.getNextState('auth')(state, action)
+                    currentState: dux.getNextState('auth')(state.currentState, action)
                 }
             case dux.types.LOGOUT_ERROR:
             case dux.types.LOGIN_ERROR:
                 return {
                     ...state,
                     error: action.error,
-                    currentState: dux.getNextState('auth')(state, action)
+                    currentState: dux.getNextState('auth')(state.currentState, action)
                 }
             case dux.types.LOGIN_SUCCESSFUL:
                 return {
                     ...state,
                     user: action.user,
-                    currentState: dux.getNextState('auth')(state, action)
+                    currentState: dux.getNextState('auth')(state.currentState, action)
                 }
             case dux.types.LOGOUT_SUCCESSFUL:
                 return {
                     ...dux.initialState,
-                    currentState: dux.getNextState('auth')(state, action)
+                    currentState: dux.getNextState('auth')(state.currentState, action)
                 }
             default:
                 return state
@@ -257,7 +257,7 @@ test('state machines:', (t) => {
     }
     const auth = {
         initial: {
-            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress'
+            [`${namespace}/${store}/ATTEMPT_LOGIN`]: 'inProgress'
         },
         inProgress: {
             [`${namespace}/${store}/LOGIN_ERROR`]: 'error',
@@ -269,17 +269,17 @@ test('state machines:', (t) => {
             [`${namespace}/${store}/ATTEMPT_LOGOUT`]: 'inProgress'
         },
         loggedOut: {
-            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress'
+            [`${namespace}/${store}/ATTEMPT_LOGIN`]: 'inProgress'
         },
         error: {
-            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress',
+            [`${namespace}/${store}/ATTEMPT_LOGIN`]: 'inProgress',
             [`${namespace}/${store}/CLEAR_ERROR`]: 'loggedOut'
         }
     }
     const machines = d => ({
         auth: {
             initial: {
-                [d.types.ATTEMPTING_LOGIN]: 'inProgress'
+                [d.types.ATTEMPT_LOGIN]: 'inProgress'
             },
             inProgress: {
                 [d.types.LOGIN_ERROR]: 'error',
@@ -291,10 +291,10 @@ test('state machines:', (t) => {
                 [d.types.ATTEMPT_LOGOUT]: 'inProgress'
             },
             loggedOut: {
-                [d.types.ATTEMPTING_LOGIN]: 'inProgress'
+                [d.types.ATTEMPT_LOGIN]: 'inProgress'
             },
             error: {
-                [d.types.ATTEMPTING_LOGIN]: 'inProgress',
+                [d.types.ATTEMPT_LOGIN]: 'inProgress',
                 [d.types.CLEAR_ERROR]: 'loggedOut'
             }
         }
@@ -331,22 +331,26 @@ test('state machines:', (t) => {
         nt.end()
     })
 
-    t.test(`
-...wont't move to an invalid state despite a dispatched action whose purpose is to move to that state
-    `, (nt) => {
+    t.test('...wont\'t move to an invalid state despite a dispatched action whose purpose is to move to that state',
+        (nt) => {
+            const duck = new Duck({namespace, store, types, machines, initialState, reducer})
+            const action = {
+                type: `${namespace}/${store}/LOGIN_SUCCESSFUL`,
+                user: {id: 123, name: 'David'}
+            }
+            nt.deepEqual(duck.reducer(initialState, action), {...initialState, user: {id: 123, name: 'David'}})
+            nt.end()
+        }
+    )
+
+    t.test('...can move to a valid state when the approprate action is dispatched', (nt) => {
         const duck = new Duck({namespace, store, types, machines, initialState, reducer})
-        nt.deepEqual(duck.reducer(initialState, {type: `${namespace}/${store}/LOGIN_SUCCESSFUL`}), initialState)
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+            {...initialState, currentState: 'inProgress'}
+        )
         nt.end()
     })
-
-    // t.test('...can move to a valid state when the approprate action is dispatched', (nt) => {
-    //     const duck = new Duck({namespace, store, types, machines, initialState, reducer})
-    //     nt.deepEqual(
-    //         duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-    //         {...initialState, currentState: 'inProgress'}
-    //     )
-    //     nt.end()
-    // })
 
     t.end()
 })
