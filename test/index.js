@@ -209,65 +209,144 @@ test('cannot overwrite a constant', (t) => {
 })
 
 test('state machines:', (t) => {
-    const auth = {
-        initial: {
-            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
-            'attadux/auth/LOGIN_ERROR': 'error'
-        },
-        loggedIn: {
-            'attadux/auth/LOGOUT_SUCCESSFUL': 'initial',
-            'attadux/auth/LOGOUT_ERROR': 'error'
-        },
-        loggedOut: {
-            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
-            'attadux/auth/LOGIN_ERROR': 'error'
-        },
-        error: {
-            'attadux/auth/LOGIN_SUCCESSFUL': 'loggedIn',
-            'attadux/auth/LOGOUT_SUCCESSFUL': 'loggedOut'
+    const namespace = 'attadux'
+    const store = 'auth'
+    const initialState = {
+        baseUrl: 'http://localhost',
+        user: {},
+        currentState: 'initial'
+    }
+    const types = [
+        'ATTEMPTING_LOGIN',
+        'ATTEMPT_LOGOUT',
+        'CLEAR_ERROR',
+        'LOGIN_SUCCESSFUL',
+        'LOGIN_ERROR',
+        'LOGOUT_SUCCESSFUL',
+        'LOGOUT_ERROR'
+    ]
+    const reducer = (state, action, dux) => {
+        switch (action.type) {
+            case dux.types.ATTEMPT_LOGOUT:
+            case dux.types.ATTEMPT_LOGIN:
+                return {
+                    ...state,
+                    currentState: dux.getNextState('auth')(state, action)
+                }
+            case dux.types.LOGOUT_ERROR:
+            case dux.types.LOGIN_ERROR:
+                return {
+                    ...state,
+                    error: action.error,
+                    currentState: dux.getNextState('auth')(state, action)
+                }
+            case dux.types.LOGIN_SUCCESSFUL:
+                return {
+                    ...state,
+                    user: action.user,
+                    currentState: dux.getNextState('auth')(state, action)
+                }
+            case dux.types.LOGOUT_SUCCESSFUL:
+                return {
+                    ...dux.initialState,
+                    currentState: dux.getNextState('auth')(state, action)
+                }
+            default:
+                return state
         }
     }
+    const auth = {
+        initial: {
+            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress'
+        },
+        inProgress: {
+            [`${namespace}/${store}/LOGIN_ERROR`]: 'error',
+            [`${namespace}/${store}/LOGOUT_ERROR`]: 'error',
+            [`${namespace}/${store}/LOGIN_SUCCESSFUL`]: 'loggedIn',
+            [`${namespace}/${store}/LOGOUT_SUCCESSFUL`]: 'loggedOut'
+        },
+        loggedIn: {
+            [`${namespace}/${store}/ATTEMPT_LOGOUT`]: 'inProgress'
+        },
+        loggedOut: {
+            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress'
+        },
+        error: {
+            [`${namespace}/${store}/ATTEMPTING_LOGIN`]: 'inProgress',
+            [`${namespace}/${store}/CLEAR_ERROR`]: 'loggedOut'
+        }
+    }
+    const machines = d => ({
+        auth: {
+            initial: {
+                [d.types.ATTEMPTING_LOGIN]: 'inProgress'
+            },
+            inProgress: {
+                [d.types.LOGIN_ERROR]: 'error',
+                [d.types.LOGOUT_ERROR]: 'error',
+                [d.types.LOGIN_SUCCESSFUL]: 'loggedIn',
+                [d.types.LOGOUT_SUCCESSFUL]: 'loggedOut'
+            },
+            loggedIn: {
+                [d.types.ATTEMPT_LOGOUT]: 'inProgress'
+            },
+            loggedOut: {
+                [d.types.ATTEMPTING_LOGIN]: 'inProgress'
+            },
+            error: {
+                [d.types.ATTEMPTING_LOGIN]: 'inProgress',
+                [d.types.CLEAR_ERROR]: 'loggedOut'
+            }
+        }
+    })
+
     t.test('...which correspond to valid redux action types', (nt) => {
+        const duck = new Duck({namespace, store, types, machines: {auth}})
+        nt.deepEqual(duck.machines.auth, auth)
+        nt.end()
+    })
+
+    t.test('...which can access the action types directly from the duck', (nt) => {
+        const duck = new Duck({namespace, store, types, machines})
+        nt.deepEqual(duck.machines.auth, auth)
+        nt.end()
+    })
+
+    t.test('...excludes inputs from a machine state which do NOT match a redux action type', (nt) => {
         const duck = new Duck({
-            namespace: 'attadux',
-            store: 'auth',
-            types: ['LOGIN_SUCCESSFUL', 'LOGIN_ERROR', 'LOGOUT_SUCCESSFUL', 'LOGOUT_ERROR'],
-            machines: {auth}
+            namespace,
+            store,
+            types,
+            machines: {
+                auth: {
+                    ...auth,
+                    loggedOut: {
+                        ...auth.loggedOut,
+                        [`${namespace}/${store}/NOT_A_VALID_ACTION_TYPE`]: 'loggedIn'
+                    }
+                }
+            }
         })
         nt.deepEqual(duck.machines.auth, auth)
         nt.end()
     })
 
-    const machines = ({types}) => ({
-        auth: {
-            initial: {
-                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
-                [types.LOGIN_ERROR]: 'error'
-            },
-            loggedIn: {
-                [types.LOGOUT_SUCCESSFUL]: 'initial',
-                [types.LOGOUT_ERROR]: 'error'
-            },
-            loggedOut: {
-                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
-                [types.LOGIN_ERROR]: 'error'
-            },
-            error: {
-                [types.LOGIN_SUCCESSFUL]: 'loggedIn',
-                [types.LOGOUT_SUCCESSFUL]: 'loggedOut'
-            }
-        }
-    })
-    t.test('...which can access the action types directly from the duck', (nt) => {
-        const duck = new Duck({
-            namespace: 'attadux',
-            store: 'auth',
-            types: ['LOGIN_SUCCESSFUL', 'LOGIN_ERROR', 'LOGOUT_SUCCESSFUL', 'LOGOUT_ERROR'],
-            machines
-        })
-        nt.deepEqual(duck.machines.auth, auth)
+    t.test(`
+...wont't move to an invalid state despite a dispatched action whose purpose is to move to that state
+    `, (nt) => {
+        const duck = new Duck({namespace, store, types, machines, initialState, reducer})
+        nt.deepEqual(duck.reducer(initialState, {type: `${namespace}/${store}/LOGIN_SUCCESSFUL`}), initialState)
         nt.end()
     })
+
+    // t.test('...can move to a valid state when the approprate action is dispatched', (nt) => {
+    //     const duck = new Duck({namespace, store, types, machines, initialState, reducer})
+    //     nt.deepEqual(
+    //         duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+    //         {...initialState, currentState: 'inProgress'}
+    //     )
+    //     nt.end()
+    // })
 
     t.end()
 })
