@@ -18,7 +18,7 @@ import {
     zipObj
 } from 'ramda'
 import spected from 'spected'
-import {isDuxSelector, isPrimitive} from './is'
+import {isDuxSelector, isPrimitive, isTransitionPossible} from './is'
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 
@@ -107,6 +107,55 @@ export const createConstants = (consts = {}) => {
 
     /* Freeze everything, to make immutable (the zipped objects were already frozen when created) */
     return Object.freeze(constants)
+}
+
+export const findMachineName = ({type, machineName} = {}, currentState = '', {machines} = {}) => {
+    if (machineName) {
+        if (isTransitionPossible(type, currentState, machines[machineName])) {
+            return machineName
+        }
+        return null
+    }
+
+    let mName
+    Object.keys(machines).some(name => {
+        if (isTransitionPossible(type, currentState, machines[name])) {
+            mName = name
+            return true
+        }
+        return false
+    })
+    return mName
+}
+
+export const getCurrentState = (state, {currentStateProp = 'currentState'}) => {
+    if (is(String, state)) {
+        return state
+    } else if (is(Object, state)) {
+        return state[currentStateProp] || ''
+    }
+    return ''
+}
+
+export function getNextState(state, action = {}) {
+    const currentState = getCurrentState(state, action)
+    if (currentState) {
+        const machineName = findMachineName(action, currentState, this)
+        if (machineName) {
+            return this.machines[machineName][currentState][action.type]
+        }
+    }
+    return currentState
+}
+
+export function getNextStateFromNamedMachine(machineName = '') {
+    return (state, action = {}) => {
+        const currentState = getCurrentState(state, action)
+        if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
+            return this.machines[machineName][currentState][action.type]
+        }
+        return currentState
+    }
 }
 
 /**

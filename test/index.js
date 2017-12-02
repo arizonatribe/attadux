@@ -200,11 +200,11 @@ test('cannot overwrite a constant', (t) => {
     const changeArrayConst = () => {
         duck.consts.frameworks = ['vanilla']
     }
-    t.throws(changeRegexConst)
-    t.throws(changeStringConst)
-    t.throws(changeNumericConst)
-    t.throws(changeDateConst)
-    t.throws(changeArrayConst)
+    t.throws(changeRegexConst, 'unable to overwrite a regex')
+    t.throws(changeStringConst, 'unable to overwrite a string')
+    t.throws(changeNumericConst, 'unable to overwrite a numeric value')
+    t.throws(changeDateConst, 'unable to overwrite a Date value')
+    t.throws(changeArrayConst, 'unable to overwrite an array')
     t.end()
 })
 
@@ -227,29 +227,42 @@ test('state machines:', (t) => {
     ]
     const reducer = (state, action, dux) => {
         switch (action.type) {
+            case dux.types.LOGOUT_ERROR:
+            case dux.types.LOGIN_ERROR:
+                return {...state, error: action.error}
+            case dux.types.LOGIN_SUCCESSFUL:
+                return {...state, user: action.user}
+            case dux.types.LOGOUT_SUCCESSFUL:
+                return initialState
+            default:
+                return state
+        }
+    }
+    const manualReducer = (state, action, dux) => {
+        switch (action.type) {
             case dux.types.ATTEMPT_LOGOUT:
             case dux.types.ATTEMPT_LOGIN:
                 return {
                     ...state,
-                    currentState: dux.getNextState('auth')(state.currentState, action)
+                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
                 }
             case dux.types.LOGOUT_ERROR:
             case dux.types.LOGIN_ERROR:
                 return {
                     ...state,
                     error: action.error,
-                    currentState: dux.getNextState('auth')(state.currentState, action)
+                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
                 }
             case dux.types.LOGIN_SUCCESSFUL:
                 return {
                     ...state,
                     user: action.user,
-                    currentState: dux.getNextState('auth')(state.currentState, action)
+                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
                 }
             case dux.types.LOGOUT_SUCCESSFUL:
                 return {
                     ...dux.initialState,
-                    currentState: dux.getNextState('auth')(state.currentState, action)
+                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
                 }
             default:
                 return state
@@ -343,7 +356,7 @@ test('state machines:', (t) => {
         }
     )
 
-    t.test('...can move to a valid state when the approprate action is dispatched', (nt) => {
+    t.test('...can move to a VALID state when the approprate action is dispatched', (nt) => {
         const duck = new Duck({namespace, store, types, machines, initialState, reducer})
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
@@ -351,6 +364,63 @@ test('state machines:', (t) => {
         )
         nt.end()
     })
+
+    t.test('...advance to another state using the state machine manually, in the normal reducer', (nt) => {
+        const duck = new Duck({
+            useTransitions: false,
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer: manualReducer
+        })
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+            {...initialState, currentState: 'inProgress'}
+        )
+        nt.end()
+    })
+
+    t.test('...wont\'t move to an invalid state (also using the manual reducer pattern)',
+        (nt) => {
+            const duck = new Duck({
+                namespace,
+                store,
+                types,
+                machines,
+                initialState,
+                useTransitions: false,
+                reducer: manualReducer
+            })
+            const action = {
+                type: `${namespace}/${store}/LOGIN_SUCCESSFUL`,
+                user: {id: 123, name: 'David'}
+            }
+            nt.deepEqual(duck.reducer(initialState, action), {...initialState, user: {id: 123, name: 'David'}})
+            nt.end()
+        }
+    )
+
+    t.test('...wont\'t move to an invalid state and won\'t invoke the normal reducer when using strict mode',
+        (nt) => {
+            const duck = new Duck({
+                namespace,
+                store,
+                types,
+                machines,
+                initialState,
+                reducer,
+                strictTransitions: true
+            })
+            const action = {
+                type: `${namespace}/${store}/LOGIN_SUCCESSFUL`,
+                user: {id: 123, name: 'David'}
+            }
+            nt.deepEqual(duck.reducer(initialState, action), initialState)
+            nt.end()
+        }
+    )
 
     t.end()
 })
