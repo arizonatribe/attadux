@@ -1,9 +1,10 @@
-import {concat, is, isEmpty, isNil, mergeDeepWith, zipObj} from 'ramda'
+import {concat, has, is, isEmpty, isNil, mergeDeepWith, zipObj} from 'ramda'
 import {
     invokeIfFn,
     createConstants,
     createMachines,
     createExtender,
+    getDefaultStateForMachines,
     getNextState,
     getNextStateForMachine,
     currentStateHasType,
@@ -27,6 +28,7 @@ class Duck {
         const {
             useTransitions = true,
             strictTransitions = false,
+            stateMachinesPropName = 'states',
             namespace,
             store,
             types,
@@ -49,11 +51,18 @@ class Duck {
             this.strict = strictTransitions
         }
 
+        this.statesProp = stateMachinesPropName
         this.consts = createConstants(consts)
         this.types = zipObj(types, types.map(type => `${namespace}/${store}/${type}`))
         this.validators = Object.freeze(invokeIfFn(validators)(this))
-        this.initialState = invokeIfFn(initialState)(this)
         this.machines = createMachines(invokeIfFn(machines)(this), this)
+        this.initialState = invokeIfFn(initialState)(this)
+        if (!isEmpty(this.machines)) {
+            this.initialState = {
+                ...(is(Object, this.initialState) ? this.initialState : {}),
+                [stateMachinesPropName]: getDefaultStateForMachines(this.machines)
+            }
+        }
         this.selectors = deriveSelectors(invokeIfFn(selectors)(this))
         this.creators = invokeIfFn(creators)(this)
         this.reducer = (!isEmpty(this.machines) &&
@@ -65,18 +74,26 @@ class Duck {
     }
 
     transitions(state, action = {}) {
-        const {initialState, strict, options: {reducer}} = this
-        const getState = () => (isNil(state) ? initialState : state)
+        const {initialState, statesProp, strict, options: {reducer}} = this
+        const getState = () => {
+            if (isNil(state)) {
+                return initialState
+            } else if (has(statesProp, state)) {
+                return state
+            }
+            
+            return {...state, [statesProp]: initialState[statesProp]}
+        }
 
-        if (strict && !currentStateHasType(state, action, this)) {
+        if (strict && !currentStateHasType(getState(), action, this)) {
             return getState()
         }
 
-        const states = this.getNextState(state, action, this)
+        const states = this.getNextState(getState(), action, this)
 
         return {
-            ...reducer({...getState(), states}, action, this),
-            states
+            ...reducer({...getState(), [statesProp]: states}, action, this),
+            [statesProp]: states
         }
     }
 

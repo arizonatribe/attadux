@@ -127,22 +127,26 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     })
     return mName
 }
+export const getDefaultStateForMachines = (machines = {}) => {
+    const machineNames = Object.keys(machines || {})
+    return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
+}
 
-export const getCurrentState = (state, machines = {}) => {
+export const getCurrentState = (state, machines = {}, statesProp = 'states') => {
     const machineNames = Object.keys(machines || {})
     return {
         ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
-        ...pick(machineNames, state.states)
+        ...pick(machineNames, state[statesProp])
     }
 }
 
-export const currentStateHasType = (state, action = {}, {machines} = {}) =>
+export const currentStateHasType = (state, action = {}, {machines, statesProp} = {}) =>
     toPairs(machines).some(([name, machine]) =>
-        !isNil(machine[getCurrentState(state, machines)[name]][action.type])
+        !isNil(machine[getCurrentState(state, machines, statesProp)[name]][action.type])
     )
 
 export function getNextState(state, action = {}) {
-    const currentState = getCurrentState(state, this.machines)
+    const currentState = getCurrentState(state, this.machines, this.statesProp)
 
     return toPairs(this.machines)
         .map(([name, machine]) => {
@@ -155,9 +159,9 @@ export function getNextState(state, action = {}) {
         .reduce((machine, [name, st]) => ({...machine, [name]: st}), {})
 }
 
-export function getNextStateForMachine(machineName = '') {
+export function getNextStateForMachine(machineName = '', statesProp = 'states') {
     return (state, action = {}) => {
-        const currentState = state.states[machineName]
+        const currentState = state[statesProp][machineName]
         if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
             return this.machines[machineName][currentState][action.type]
         }
