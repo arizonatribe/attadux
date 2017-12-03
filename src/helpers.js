@@ -128,29 +128,36 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     return mName
 }
 
-export const getCurrentState = (state, {currentStateProp = 'currentState'}) => {
-    if (is(String, state)) {
-        return state
-    } else if (is(Object, state)) {
-        return state[currentStateProp] || ''
+export const getCurrentState = (state, machines = {}) => {
+    const machineNames = Object.keys(machines || {})
+    return {
+        ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
+        ...pick(machineNames, state.states)
     }
-    return ''
 }
+
+export const currentStateHasType = (state, action = {}, {machines} = {}) =>
+    toPairs(machines).some(([name, machine]) =>
+        !isNil(machine[getCurrentState(state, machines)[name]][action.type])
+    )
 
 export function getNextState(state, action = {}) {
-    const currentState = getCurrentState(state, action)
-    if (currentState) {
-        const machineName = findMachineName(action, currentState, this)
-        if (machineName) {
-            return this.machines[machineName][currentState][action.type]
-        }
-    }
-    return currentState
+    const currentState = getCurrentState(state, this.machines)
+
+    return toPairs(this.machines)
+        .map(([name, machine]) => {
+            const nextState = machine[currentState[name]][action.type]
+            if (isNil(nextState)) {
+                return [name, currentState[name]]
+            }
+            return [name, nextState]
+        })
+        .reduce((machine, [name, st]) => ({...machine, [name]: st}), {})
 }
 
-export function getNextStateFromNamedMachine(machineName = '') {
+export function getNextStateForMachine(machineName = '') {
     return (state, action = {}) => {
-        const currentState = getCurrentState(state, action)
+        const currentState = state.states[machineName]
         if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
             return this.machines[machineName][currentState][action.type]
         }

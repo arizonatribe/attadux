@@ -1,13 +1,12 @@
-import {concat, has, is, isEmpty, isNil, mergeDeepWith, values, zipObj} from 'ramda'
+import {concat, is, isEmpty, isNil, mergeDeepWith, zipObj} from 'ramda'
 import {
     invokeIfFn,
     createConstants,
     createMachines,
     createExtender,
-    findMachineName,
-    getCurrentState,
     getNextState,
-    getNextStateFromNamedMachine,
+    getNextStateForMachine,
+    currentStateHasType,
     deriveSelectors
 } from './helpers'
 import Selector from './Selector'
@@ -62,35 +61,22 @@ class Duck {
             this.transitions.bind(this) :
             this.reducer.bind(this)
         this.getNextState = getNextState.bind(this)
-        this.getNextStateFromNamedMachine = getNextStateFromNamedMachine.bind(this)
+        this.getNextStateForMachine = getNextStateForMachine.bind(this)
     }
 
     transitions(state, action = {}) {
-        const {currentStateProp = 'currentState'} = action
         const {initialState, strict, options: {reducer}} = this
         const getState = () => (isNil(state) ? initialState : state)
-        const currentState = getCurrentState(state, action)
 
-        if (isNil(currentState)) {
-            return reducer(getState(), action, this)
-        }
-
-        if (strict) {
-            const machineName = findMachineName(action, getState()[currentStateProp], this)
-            const nextState = this.getNextStateFromNamedMachine(machineName)(getState(), action)
-            if (machineName && values(this.machines[machineName]).some(has(action.type))) {
-                return {
-                    ...reducer(getState(), action, this),
-                    [currentStateProp]: nextState
-                }
-            }
-
+        if (strict && !currentStateHasType(state, action, this)) {
             return getState()
         }
 
+        const states = this.getNextState(state, action, this)
+
         return {
-            ...reducer(getState(), action, this),
-            [currentStateProp]: this.getNextState(state, action)
+            ...reducer({...getState(), states}, action, this),
+            states
         }
     }
 

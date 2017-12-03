@@ -214,7 +214,9 @@ test('state machines:', (t) => {
     const initialState = {
         baseUrl: 'http://localhost',
         user: {},
-        currentState: 'initial'
+        states: {
+            auth: 'initial'
+        }
     }
     const types = [
         'ATTEMPT_LOGIN',
@@ -244,25 +246,37 @@ test('state machines:', (t) => {
             case dux.types.ATTEMPT_LOGIN:
                 return {
                     ...state,
-                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
+                    states: {
+                        ...state.states,
+                        auth: dux.getNextStateForMachine('auth')(state, action)
+                    }
                 }
             case dux.types.LOGOUT_ERROR:
             case dux.types.LOGIN_ERROR:
                 return {
                     ...state,
                     error: action.error,
-                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
+                    states: {
+                        ...state.states,
+                        auth: dux.getNextStateForMachine('auth')(state, action)
+                    }
                 }
             case dux.types.LOGIN_SUCCESSFUL:
                 return {
                     ...state,
                     user: action.user,
-                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
+                    states: {
+                        ...state.states,
+                        auth: dux.getNextStateForMachine('auth')(state, action)
+                    }
                 }
             case dux.types.LOGOUT_SUCCESSFUL:
                 return {
                     ...dux.initialState,
-                    currentState: dux.getNextStateFromNamedMachine('auth')(state, action)
+                    states: {
+                        ...initialState.states,
+                        auth: dux.getNextStateForMachine('auth')(state, action)
+                    }
                 }
             default:
                 return state
@@ -360,7 +374,7 @@ test('state machines:', (t) => {
         const duck = new Duck({namespace, store, types, machines, initialState, reducer})
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, currentState: 'inProgress'}
+            {...initialState, states: {...initialState.states, auth: 'inProgress'}}
         )
         nt.end()
     })
@@ -377,7 +391,7 @@ test('state machines:', (t) => {
         })
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, currentState: 'inProgress'}
+            {...initialState, states: {...initialState.states, auth: 'inProgress'}}
         )
         nt.end()
     })
