@@ -7,7 +7,7 @@ import {
     init,
     is,
     isNil,
-    mergeDeepRight,
+    mergeDeepWith,
     keys,
     last,
     memoize,
@@ -15,10 +15,10 @@ import {
     pickBy,
     reduce,
     toPairs,
+    type as getType,
     values,
     zipObj
 } from 'ramda'
-import spected from 'spected'
 import {isDuxSelector, isPrimitive, isTransitionPossible} from './is'
 
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
@@ -28,15 +28,13 @@ export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const createSelector = (...selectors) =>
     memoize(converge(last(selectors), init(selectors)))
 
-export const createValidator = rules => {
-    const fields = Object.keys(rules)
-    return compose(
-        pickBy(val => val !== true),
-        vals => spected(rules, {
-            ...reduce((obj, key) => ({...obj, [key]: ''}), {}, fields),
-            ...vals
-        })
-    )
+export const mergeStrategy = (parent, child) => {
+    if (getType(parent) !== getType(child) || isNil(child)) {
+        return parent
+    } else if (isPrimitive(child) || is(RegExp, child) || is(Function, child)) {
+        return child
+    }
+    return [...parent, ...child]
 }
 
 export const createExtender = (parentDuck, childDuckOptions) =>
@@ -51,7 +49,7 @@ export const createExtender = (parentDuck, childDuckOptions) =>
         } else if (isNil(childDuckOptions[key])) {
             return {[key]: parentDuck[key]}
         }
-        return {[key]: mergeDeepRight(parentDuck[key], childDuckOptions[key])}
+        return {[key]: mergeDeepWith(mergeStrategy, parentDuck[key], childDuckOptions[key])}
     }
 
 export const createMachineStates = (machine = {}, {types} = {}) => (

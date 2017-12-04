@@ -1,4 +1,5 @@
-import {concat, has, is, isEmpty, isNil, mergeDeepWith, zipObj} from 'ramda'
+import {concat, has, is, isEmpty, isNil, map, mergeDeepWith, zipObj} from 'ramda'
+import spected from 'spected'
 import {
     invokeIfFn,
     createConstants,
@@ -54,7 +55,7 @@ class Duck {
         this.statesProp = stateMachinesPropName
         this.consts = createConstants(consts)
         this.types = zipObj(types, types.map(type => `${namespace}/${store}/${type}`))
-        this.validators = Object.freeze(invokeIfFn(validators)(this))
+        this.validators = map(spected, invokeIfFn(validators)(this))
         this.machines = createMachines(invokeIfFn(machines)(this), this)
         this.initialState = invokeIfFn(initialState)(this)
         if (!isEmpty(this.machines)) {
@@ -105,12 +106,13 @@ class Duck {
         const parentOptions = this.options
         const extendedOptions = {...duxDefaults, ...parentOptions, ...invokeIfFn(opts)(this)}
         const extendProp = createExtender(this, extendedOptions)
+        const extendFromParentOptions = createExtender(parentOptions, extendedOptions)
 
         return new Duck({
             ...extendedOptions,
             ...extendProp('initialState'),
-            ...extendProp('validators'),
             ...extendProp('machines'),
+            ...extendFromParentOptions('validators'),
             ...extendProp('selectors'),
             ...extendProp('creators'),
             types: [...parentOptions.types, ...extendedOptions.types],
