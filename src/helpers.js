@@ -7,6 +7,7 @@ import {
     init,
     is,
     isNil,
+    mergeDeepRight,
     keys,
     last,
     memoize,
@@ -19,6 +20,8 @@ import {
 } from 'ramda'
 import spected from 'spected'
 import {isDuxSelector, isPrimitive, isTransitionPossible} from './is'
+
+export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 
@@ -48,38 +51,30 @@ export const createExtender = (parentDuck, childDuckOptions) =>
         } else if (isNil(childDuckOptions[key])) {
             return {[key]: parentDuck[key]}
         }
-        return {[key]: {
-            ...parentDuck[key],
-            ...childDuckOptions[key]}
-        }
+        return {[key]: mergeDeepRight(parentDuck[key], childDuckOptions[key])}
     }
 
-export const createMachineStates = (machine = {}, {types} = {}) => {
-    const validStates = {}
-
-    toPairs(machine)
-        .filter(([state, transitions]) =>
+export const createMachineStates = (machine = {}, {types} = {}) => (
+    Object.freeze(
+        toPairs(machine).filter(([state, transitions]) =>
             is(String, state)
             && values(transitions).every(st => is(String, st) && has(st, machine))
             && keys(transitions).some(at => is(String, at) && values(types).includes(at))
-        )
-        .forEach(([state, transitions]) => {
-            validStates[state] = pick(
+        ).map(([state, transitions]) => (
+            [state, pick(
                 keys(transitions).filter(at => is(String, at) && values(types).includes(at)),
                 transitions
-            )
-        })
+            )]
+        )).reduce(listOfPairsToOneObject, {})
+    )
+)
 
-    return Object.freeze(validStates)
-}
-
-export const createMachines = (machines = {}, context = {}) => {
-    const validMachines = {}
-    toPairs(machines).forEach(([name, machine]) => {
-        validMachines[name] = createMachineStates(machine, context)
-    })
-    return Object.freeze(validMachines)
-}
+export const createMachines = (machines = {}, context = {}) => (
+    Object.freeze(toPairs(machines)
+        .map(([name, machine]) => ([name, createMachineStates(machine, context)]))
+        .reduce(listOfPairsToOneObject, {})
+    )
+)
 
 /**
  * Helper utility to assist in creating the constants and making them immutable.
@@ -88,25 +83,25 @@ export const createMachines = (machines = {}, context = {}) => {
  * @returns {object} constants parsed, validated and frozen
  */
 export const createConstants = (consts = {}) => {
-    const constants = {}
-
     /* no nested functions or objects, just primitives or conversion of arrays
      * of primitives into simple objects whose keys and vals are the same */
 
     if (!isPrimitive(consts) && !is(Array, consts) && is(Object, consts)) {
-        toPairs(consts).forEach(([name, value]) => {
-            if (is(Array, value)) {
-                /* Creates an object whose keys and values are identical */
-                constants[name] = Object.freeze(zipObj(value.filter(isPrimitive), value.filter(isPrimitive)))
-            } else if (isPrimitive(value) || is(RegExp, value)) {
-                /* Otherwise assigns  */
-                constants[name] = value
-            }
-        })
+        return Object.freeze(
+            toPairs(consts).map(([name, value]) => {
+                if (is(Array, value)) {
+                    /* Creates an object whose keys and values are identical */
+                    return [name, Object.freeze(zipObj(value.filter(isPrimitive), value.filter(isPrimitive)))]
+                } else if (isPrimitive(value) || is(RegExp, value)) {
+                    /* Otherwise skips any modifications */
+                    return [name, value]
+                }
+                return null
+            }).filter(f => !isNil(f)).reduce(listOfPairsToOneObject, {})
+        )
     }
 
-    /* Freeze everything, to make immutable (the zipped objects were already frozen when created) */
-    return Object.freeze(constants)
+    return {}
 }
 
 export const findMachineName = ({type, machineName} = {}, currentState = '', {machines} = {}) => {
@@ -156,7 +151,7 @@ export function getNextState(state, action = {}) {
             }
             return [name, nextState]
         })
-        .reduce((machine, [name, st]) => ({...machine, [name]: st}), {})
+        .reduce(listOfPairsToOneObject, {})
 }
 
 export function getNextStateForMachine(machineName = '', statesProp = 'states') {

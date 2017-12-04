@@ -204,6 +204,32 @@ test('state machines:', (t) => {
         nt.end()
     })
 
+    t.test('...whose machines can be extended', (nt) => {
+        const duck = new Duck({namespace, initialState, store, types, machines: {auth}, reducer})
+        const childDuck = duck.extend({
+            types: ['SESSION_EXPIRED'],
+            machines: {auth: {loggedIn: {[`${namespace}/${store}/SESSION_EXPIRED`]: 'loggedOut'}}},
+            reducer: (state, action, dux) => {
+                switch (action.type) {
+                    case dux.types.SESSION_EXPIRED:
+                        return dux.initialState
+                    default:
+                        return state
+                }
+            }
+        })
+        nt.deepEqual(childDuck.machines.auth.loggedIn, {
+            [`${namespace}/${store}/ATTEMPT_LOGOUT`]: 'inProgress',
+            [`${namespace}/${store}/SESSION_EXPIRED`]: 'loggedOut'
+        }, 'verify the child duck shows the added input type of \'SESSION_EXPIRED\' on the \'loggedIn\' state')
+        nt.deepEqual(
+            childDuck.reducer({...initialState, states: {auth: 'loggedIn'}}, {type: `${namespace}/${store}/SESSION_EXPIRED`}),
+            {...initialState, states: {auth: 'loggedOut'}},
+            'state has changed from \'loggedIn\' to \'loggedOut\' when external SESSION_EXPIRED event occurred'
+        )
+        nt.end()
+    })
+
     t.test('...tracks the machine states in the redux store', (nt) => {
         const duck = new Duck({
             namespace,
