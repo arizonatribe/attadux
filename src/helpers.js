@@ -28,7 +28,21 @@ export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const createSelector = (...selectors) =>
     memoize(converge(last(selectors), init(selectors)))
 
-export const mergeStrategy = (parent, child) => {
+export const mergeFailedValidationsWithOriginalState = (currentState, validations) =>
+    mergeDeepWith(
+        (val, stat) => (val === true ? val : stat),
+        validations,
+        currentState
+    )
+
+export const resetFailuresToOriginalState = (possibleNextState, validationsWithOriginalValues) =>
+    mergeDeepWith(
+        (val, stat) => (val === true ? stat : val),
+        validationsWithOriginalValues,
+        possibleNextState
+    )
+
+export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
         return parent
     } else if (isPrimitive(child) || is(RegExp, child) || is(Function, child)) {
@@ -49,7 +63,7 @@ export const createExtender = (parentDuck, childDuckOptions) =>
         } else if (isNil(childDuckOptions[key])) {
             return {[key]: parentDuck[key]}
         }
-        return {[key]: mergeDeepWith(mergeStrategy, parentDuck[key], childDuckOptions[key])}
+        return {[key]: mergeDeepWith(simpleMergeStrategy, parentDuck[key], childDuckOptions[key])}
     }
 
 export const createMachineStates = (machine = {}, {types} = {}) => (

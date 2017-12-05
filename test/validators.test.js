@@ -44,17 +44,27 @@ test('validators:', (t) => {
         }
     }
 
-    test('...deeply nested validators', (nt) => {
+    test('...which can be deeply nested', (nt) => {
         const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', user: {age: 22, name: {first: 'John', last: 'Smith'}}}),
             {email: true, user: {age: true, name: {first: true, last: true}}},
-            ''
+            'verify that all the input fields passed validation'
         )
         nt.end()
     })
 
-    test('...extending validators', (nt) => {
+    test('...which always pass true for input props that have no corresponding validation rule', (nt) => {
+        const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
+        nt.deepEqual(
+            duck.validators.auth({email: 'lorem.ipsum@email.com', lorem: 'ipsum', dolor: 'sit amet'}),
+            {email: true, lorem: true, dolor: true},
+            'verify that the valid \'email\' field and the other fields (which have no validators) are all true'
+        )
+        nt.end()
+    })
+
+    test('...which can be extended', (nt) => {
         const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
         nt.deepEqual(
             duck.extend({
@@ -68,7 +78,7 @@ test('validators:', (t) => {
                 user: {age: 22, name: {first: 'John', last: 'Smith'}}
             }),
             {email: ['Only mycompany.com email addresses allowed'], user: {age: true, name: {first: true, last: true}}},
-            ''
+            'verify the email domain-specific extended rule catches the invalid domain'
         )
         nt.end()
     })
