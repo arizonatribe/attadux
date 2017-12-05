@@ -1,7 +1,6 @@
 import test from 'tape'
 import Duck from '../src/Duck'
-import Selector from '../src/Selector'
-import {createSelector} from '../src/helpers'
+import {createSelector, createDuckSelector} from '../src/helpers'
 
 test('lets the selectors compose themselves and reference the duck instance', (t) => {
     const duck = new Duck({
@@ -13,7 +12,7 @@ test('lets the selectors compose themselves and reference the duck instance', (t
         },
         selectors: {
             items: state => state.items, // gets the items from complete state
-            subTotal: new Selector(selectors => state =>
+            subTotal: createDuckSelector(selectors => state =>
                 // Get another derived state reusing previous items selector.
                 // Can be composed multiple such states if using library like reselect.
                 selectors.items(state).reduce((computedTotal, item) => computedTotal + item.value, 0)
@@ -35,9 +34,9 @@ test('generates the selector function once per selector', (t) => {
     let numOfSelectors = 0
     const duck = new Duck({
         selectors: {
-            myFunc: new Selector(() => {
-              numOfSelectors++
-              return () => {}
+            myFunc: createDuckSelector(() => {
+                numOfSelectors++
+                return () => {}
             })
         }
     })
@@ -51,13 +50,13 @@ test('works with reselect', (t) => {
     const duck = new Duck({
         selectors: {
           test1: state => state.test1,
-          test2: new Selector(selectors => createSelector(
-            selectors.test1,
-            test1 => test1
+          test2: createDuckSelector(selectors => createSelector(
+              selectors.test1,
+              test1 => test1
           )),
-          test3: new Selector(selectors => createSelector(
-            selectors.test2,
-            test2 => test2
+          test3: createDuckSelector(selectors => createSelector(
+              selectors.test2,
+              test2 => test2
           ))
         }
     })
@@ -83,7 +82,7 @@ test('extending updates the old selectors with the new properties', (t) => {
         namespace: 'b',
         store: 'y',
         selectors: {
-            subTotal: new Selector(selectors => state =>
+            subTotal: createDuckSelector(selectors => state =>
                 // Get another derived state reusing previous items selector.
                 // Can be composed multiple such states if using library like reselect.
                 selectors.items(state).reduce((computedTotal, item) => computedTotal + item.value, 0)

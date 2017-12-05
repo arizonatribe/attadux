@@ -18,14 +18,19 @@ import {
     values,
     zipObj
 } from 'ramda'
-import {isDuxSelector, isPrimitive, isTransitionPossible} from './is'
-
-export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
+import {needsExtraction, isPrimitive, isTransitionPossible} from './is'
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
+export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
 
 export const createSelector = (...selectors) =>
     memoize(converge(last(selectors), init(selectors)))
+export const createDuckSelector = (extractFunction) => ({
+    needsExtraction: true,
+    justAddDuckSelectors(allSelectorsObject = {}) {
+        return extractFunction(allSelectorsObject)
+    }
+})
 
 export const mergeFailedValidationsWithOriginalState = (currentState, validations) =>
     mergeDeepWith(
@@ -33,14 +38,12 @@ export const mergeFailedValidationsWithOriginalState = (currentState, validation
         validations,
         currentState
     )
-
 export const resetFailuresToOriginalState = (possibleNextState, validationsWithOriginalValues) =>
     mergeDeepWith(
         (val, stat) => (val === true ? stat : val),
         validationsWithOriginalValues,
         possibleNextState
     )
-
 export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
         return parent
@@ -64,7 +67,6 @@ export const createExtender = (parentDuck, childDuckOptions) =>
         }
         return {[key]: mergeDeepWith(simpleMergeStrategy, parentDuck[key], childDuckOptions[key])}
     }
-
 export const createMachineStates = (machine = {}, {types} = {}) => (
     Object.freeze(
         toPairs(machine).filter(([state, transitions]) =>
@@ -79,14 +81,12 @@ export const createMachineStates = (machine = {}, {types} = {}) => (
         )).reduce(listOfPairsToOneObject, {})
     )
 )
-
 export const createMachines = (machines = {}, context = {}) => (
     Object.freeze(toPairs(machines)
         .map(([name, machine]) => ([name, createMachineStates(machine, context)]))
         .reduce(listOfPairsToOneObject, {})
     )
 )
-
 /**
  * Helper utility to assist in creating the constants and making them immutable.
  *
@@ -133,11 +133,11 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     })
     return mName
 }
+
 export const getDefaultStateForMachines = (machines = {}) => {
     const machineNames = Object.keys(machines || {})
     return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
 }
-
 export const getCurrentState = (state, machines = {}, statesProp = 'states') => {
     const machineNames = Object.keys(machines || {})
     return {
@@ -145,12 +145,10 @@ export const getCurrentState = (state, machines = {}, statesProp = 'states') => 
         ...pick(machineNames, state[statesProp])
     }
 }
-
 export const currentStateHasType = (state, action = {}, {machines, statesProp} = {}) =>
     toPairs(machines).some(([name, machine]) =>
         !isNil(machine[getCurrentState(state, machines, statesProp)[name]][action.type])
     )
-
 export function getNextState(state, action = {}) {
     const currentState = getCurrentState(state, this.machines, this.statesProp)
 
@@ -164,7 +162,6 @@ export function getNextState(state, action = {}) {
         })
         .reduce(listOfPairsToOneObject, {})
 }
-
 export function getNextStateForMachine(machineName = '', statesProp = 'states') {
     return (state, action = {}) => {
         const currentState = state[statesProp][machineName]
@@ -186,8 +183,8 @@ export const deriveSelectors = (selectors = {}) =>
     compose(
         reduce((composedSelectors, [key, selector]) => ({
             ...composedSelectors,
-            [key]: selector.extractFunction(composedSelectors)
+            [key]: selector.justAddDuckSelectors(composedSelectors)
         }), selectors),
         toPairs,
-        pickBy(isDuxSelector)
+        pickBy(needsExtraction)
     )(selectors)

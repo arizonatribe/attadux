@@ -1,9 +1,7 @@
 import {allPass, anyPass, complement, compose, defaultTo, either, has, is, isNil, not, path, toString} from 'ramda'
-import Selector from './Selector'
 
-const coerceToString = val => (is(String, val) ? val : toString(val))
-
-export const isDuxSelector = selector => (selector instanceof Selector)
+export const coerceToString = val => (is(String, val) ? val : toString(val))
+export const needsExtraction = selector => (selector.needsExtraction === true)
 export const isNotNil = complement(isNil)
 export const isNotBlankString = s => not(/^\s*$/.test(s))
 export const isStringieThingie = allPass([

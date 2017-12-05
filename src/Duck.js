@@ -11,7 +11,6 @@ import {
     currentStateHasType,
     deriveSelectors
 } from './helpers'
-import Selector from './Selector'
 
 export const duxDefaults = {
     consts: {},
@@ -22,7 +21,7 @@ export const duxDefaults = {
     validators: {}
 }
 
-class Duck {
+export default class Duck {
     constructor(opts = {}) {
         this.options = {...duxDefaults, ...opts}
 
@@ -124,7 +123,3 @@ class Duck {
         })
     }
 }
-
-Duck.Selector = Selector
-
-export default Duck
