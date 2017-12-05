@@ -2,7 +2,6 @@ import {
     always,
     compose,
     converge,
-    forEach,
     has,
     init,
     is,
@@ -183,16 +182,12 @@ export function getNextStateForMachine(machineName = '', statesProp = 'states') 
  * @param {object} selectors
  * @returns {object} selectors, but now with access to fellow selectors
  */
-export const deriveSelectors = (selectors = {}) => {
-    const composedSelectors = {...selectors}
-
+export const deriveSelectors = (selectors = {}) =>
     compose(
-        forEach(([key, selector]) => {
-            composedSelectors[key] = selector.extractFunction(composedSelectors)
-        }),
+        reduce((composedSelectors, [key, selector]) => ({
+            ...composedSelectors,
+            [key]: selector.extractFunction(composedSelectors)
+        }), selectors),
         toPairs,
         pickBy(isDuxSelector)
-    )(composedSelectors)
-
-    return composedSelectors
-}
+    )(selectors)
