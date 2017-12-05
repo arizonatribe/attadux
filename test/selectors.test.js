@@ -1,3 +1,4 @@
+/* eslint "max-len": "off" */
 import test from 'tape'
 import Duck from '../src/Duck'
 import {createSelector, createDuckSelector} from '../src/helpers'
@@ -46,7 +47,7 @@ test('generates the selector function once per selector', (t) => {
     t.end()
 })
 
-test('works with reselect', (t) => {
+test('memoizes selector(s) and passes them all duck selectors when createSelector applied manually by the user', (t) => {
     const duck = new Duck({
         selectors: {
           test1: state => state.test1,
@@ -60,7 +61,33 @@ test('works with reselect', (t) => {
           ))
         }
     })
-    t.equal(duck.selectors.test3({test1: 'it works'}), 'it works')
+    t.equal(
+        duck.selectors.test3({test1: 'it uses createSelector'}),
+        'it uses createSelector',
+        'verify setting the chain of selectors extracts the \'it uses createSelector\' string from the original state'
+    )
+    t.end()
+})
+
+test('memoizes selector(s) and passes them all the duck selectors, using createSelector when an array of selectors', (t) => {
+    const duck = new Duck({
+        selectors: {
+          test1: state => state.test1,
+          test2: createDuckSelector(selectors => ([
+              selectors.test1,
+              test1 => test1
+          ])),
+          test3: createDuckSelector(selectors => ([
+              selectors.test2,
+              test2 => test2
+          ]))
+        }
+    })
+    t.equal(
+        duck.selectors.test3({test1: 'it uses createSelector automagically'}),
+        'it uses createSelector automagically',
+        'verify setting the chain of selectors extracts the string from the original state'
+    )
     t.end()
 })
 

@@ -28,7 +28,11 @@ export const createSelector = (...selectors) =>
 export const createDuckSelector = (extractFunction) => ({
     needsExtraction: true,
     justAddDuckSelectors(allSelectorsObject = {}) {
-        return extractFunction(allSelectorsObject)
+        const extracted = extractFunction(allSelectorsObject)
+        if (Array.isArray(extracted)) {
+            return createSelector(...extracted)
+        }
+        return extracted
     }
 })
 
