@@ -1,9 +1,13 @@
 import test from 'tape'
-import Duck, {duxDefaults} from '../src/Duck'
+import Duck from '../src/Duck'
+import {duxDefaults} from '../src/schema'
 
 test('default values for all options have not changed', (t) => {
     t.deepEqual(
         {
+            strictTransitions: false,
+            useTransitions: true,
+            stateMachinesPropName: 'states',
             consts: {},
             creators: {},
             machines: {},
@@ -18,10 +22,10 @@ test('default values for all options have not changed', (t) => {
 })
 
 test('options object from the parent is accessible to the child (extended) duck', (t) => {
-    const duck = new Duck({foo: 2})
+    const duck = new Duck({consts: {foo: 2}})
     const childDuck = duck.extend({
-        initialState: ({options}) => ({
-            bar: options.foo * 2
+        initialState: ({consts}) => ({
+            bar: consts.foo * 2
         })
     })
     t.equal(
@@ -33,12 +37,10 @@ test('options object from the parent is accessible to the child (extended) duck'
 })
 
 test('the parent duck instance can be used when options passed into extend() is a function', (t) => {
-    const duck = new Duck({foo: 2})
-    const childDuck = duck.extend(parent => ({
-        bar: parent.options.foo * 2
-    }))
+    const duck = new Duck({consts: {foo: 2}})
+    const childDuck = duck.extend(parent => ({consts: {bar: parent.consts.foo * 2}}))
     t.equal(
-        childDuck.options.bar,
+        childDuck.consts.bar,
         4,
         'the child options \'bar\' prop was set using the parent \'foo\' prop'
     )

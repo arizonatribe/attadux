@@ -13,9 +13,19 @@ test('validators:', (t) => {
     const isLongerThan = len => isNumber(len) && len > 0 && (str => isString(str) && length(str) > len)
     const isShorterThan = len => isNumber(len) && len > 0 && (str => isString(str) && length(str) < len)
 
+    const namespace = 'attadux'
+    const store = 'auth'
     const initialState = {
         email: '',
         user: {}
+    }
+    const reducer = (state, action, {types}) => {
+        switch (action.type) {
+            case types.CREATE_USER:
+                return {...state, user: action.user}
+            default:
+                return state
+        }
     }
     const validators = {
         auth: {
@@ -45,7 +55,7 @@ test('validators:', (t) => {
     }
 
     test('...which can be deeply nested', (nt) => {
-        const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
+        const duck = new Duck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', user: {age: 22, name: {first: 'John', last: 'Smith'}}}),
             {email: true, user: {age: true, name: {first: true, last: true}}},
@@ -55,7 +65,7 @@ test('validators:', (t) => {
     })
 
     test('...which always pass true for input props that have no corresponding validation rule', (nt) => {
-        const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
+        const duck = new Duck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', lorem: 'ipsum', dolor: 'sit amet'}),
             {email: true, lorem: true, dolor: true},
@@ -65,7 +75,7 @@ test('validators:', (t) => {
     })
 
     test('...which can be extended', (nt) => {
-        const duck = new Duck({namespace: 'attadux', store: 'auth', initialState, validators})
+        const duck = new Duck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.extend({
                 validators: {
@@ -79,6 +89,83 @@ test('validators:', (t) => {
             }),
             {email: ['Only mycompany.com email addresses allowed'], user: {age: true, name: {first: true, last: true}}},
             'verify the email domain-specific extended rule catches the invalid domain'
+        )
+        nt.end()
+    })
+
+    test('...which can also be applied to a dispatched action', (nt) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            reducer,
+            initialState,
+            types: ['CREATE_USER'],
+            validators: {
+                [`${namespace}/${store}/CREATE_USER`]: {user: validators.auth.user}
+            }
+        })
+        nt.deepEqual(
+            duck.reducer(initialState, {
+                type: `${namespace}/${store}/CREATE_USER`,
+                user: {age: 11, name: {first: 'H', last: 'Potter'}}
+            }),
+            {...initialState, user: {name: {last: 'Potter'}}},
+            'verify that invalid fields were pruned from the action payload, prior to the reducer accessing it'
+        )
+        nt.end()
+    })
+
+    test('...which can also be configured to cancel the reducer if validations fail', (nt) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            reducer,
+            initialState,
+            cancelReducerOnValidationError: true,
+            types: ['CREATE_USER'],
+            validators: {
+                [`${namespace}/${store}/CREATE_USER`]: {user: validators.auth.user}
+            }
+        })
+        nt.deepEqual(
+            duck.reducer(initialState, {
+                type: `${namespace}/${store}/CREATE_USER`,
+                user: {age: 11, name: {first: 'H', last: 'Potter'}}
+            }),
+            initialState,
+            'verify that reducer did not modify state, because the dispatched action\'s payload was invalid'
+        )
+        nt.end()
+    })
+
+    test('...which can also provide manual checking of action payload to the reducer', (nt) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            initialState,
+            types: ['CREATE_USER'],
+            validators: {
+                [`${namespace}/${store}/CREATE_USER`]: {user: validators.auth.user}
+            },
+            reducer(state, action, {types, isPayloadValid}) {
+                switch (action.type) {
+                    case types.CREATE_USER: {
+                        if (isPayloadValid(action)) {
+                            return {...state, user: action.user}
+                        }
+                    }
+                    // no default
+                }
+                return state
+            }
+        })
+        nt.deepEqual(
+            duck.reducer(initialState, {
+                type: `${namespace}/${store}/CREATE_USER`,
+                user: {age: 11, name: {first: 'H', last: 'Potter'}}
+            }),
+            initialState,
+            'verify that reducer did not modify state, because the dispatched action\'s payload was invalid'
         )
         nt.end()
     })

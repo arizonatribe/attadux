@@ -1,10 +1,15 @@
 import {
     always,
+    any,
+    both,
     compose,
     converge,
+    curry,
+    either,
     has,
     init,
     is,
+    isEmpty,
     isNil,
     mergeDeepWith,
     keys,
@@ -13,15 +18,61 @@ import {
     pick,
     pickBy,
     reduce,
+    reject,
     toPairs,
+    toPairsIn,
     type as getType,
     values,
+    valuesIn,
     zipObj
 } from 'ramda'
-import {needsExtraction, isPrimitive, isTransitionPossible} from './is'
+import {needsExtraction, isPrimitive, isTransitionPossible, isPlainObj} from './is'
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
+
+export const pruneInvalidFields = curry((original, validations) =>
+    compose(
+        reduce((prunedObj, [key, val]) => {
+            const value = isPlainObj(val) ? pruneInvalidFields(original[key], val) : val
+            if (isPlainObj(val) && isEmpty(value)) {
+                return prunedObj
+            }
+            return {
+                ...prunedObj,
+                [key]: value === true ? original[key] : value
+            }
+        }, {}),
+        reject(pairs => is(Array, pairs[1])),
+        toPairsIn
+    )(validations)
+)
+
+export const pruneValidatedFields = (validations) =>
+    compose(
+        reduce((prunedObj, [key, val]) => {
+            const value = isPlainObj(val) ? pruneValidatedFields(val) : val
+            if (isPlainObj(val) && isEmpty(value)) {
+                return prunedObj
+            }
+            return {...prunedObj, [key]: val}
+        }, {}),
+        reject(pairs => pairs[1] === true),
+        toPairsIn
+    )(validations)
+
+export const anyValidationFailures = (validations = {}) =>
+    compose(
+        any(either(both(isPlainObj, anyValidationFailures), is(Array))),
+        valuesIn
+    )(validations)
+
+export const createPayloadValidator = (validators = {}) =>
+    (action = {}) =>
+        compose(
+            anyValidationFailures,
+            ({type}) => validators[type](action)
+        )(action)
 
 export const createSelector = (...selectors) =>
     memoize(converge(last(selectors), init(selectors)))
@@ -48,6 +99,10 @@ export const resetFailuresToOriginalState = (possibleNextState, validationsWithO
         validationsWithOriginalValues,
         possibleNextState
     )
+export const concatOrReplace = (left, right) =>
+    (is(Array, left) ? [...left, ...(is(Array, right) ? right : [right])] : right)
+export const leftValIfRightIsTrue = (left, right) => (right === true ? left : right)
+export const leftValIfRightIsNotTrue = (left, right) => (right !== true ? left : right)
 export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
         return parent
@@ -67,7 +122,7 @@ export const createExtender = (parentDuck, childDuckOptions) =>
                 }
             }
         } else if (isNil(childDuckOptions[key])) {
-            return {[key]: parentDuck[key]}
+            return isNil(parentDuck[key]) ? {} : {[key]: parentDuck[key]}
         }
         return {[key]: mergeDeepWith(simpleMergeStrategy, parentDuck[key], childDuckOptions[key])}
     }
@@ -119,6 +174,11 @@ export const createConstants = (consts = {}) => {
     return {}
 }
 
+export const createTypes = ({namespace, store} = {}) =>
+    types => zipObj(
+        types, types.map(type => `${namespace || ''}/${store || ''}/${type}`)
+    )
+
 export const findMachineName = ({type, machineName} = {}, currentState = '', {machines} = {}) => {
     if (machineName) {
         if (isTransitionPossible(type, currentState, machines[machineName])) {
@@ -142,19 +202,19 @@ export const getDefaultStateForMachines = (machines = {}) => {
     const machineNames = Object.keys(machines || {})
     return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
 }
-export const getCurrentState = (state, machines = {}, statesProp = 'states') => {
+export const getCurrentState = (state, machines = {}, stateMachinesPropName = 'states') => {
     const machineNames = Object.keys(machines || {})
     return {
         ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
-        ...pick(machineNames, state[statesProp])
+        ...pick(machineNames, state[stateMachinesPropName])
     }
 }
-export const currentStateHasType = (state, action = {}, {machines, statesProp} = {}) =>
+export const currentStateHasType = (state, action = {}, {machines, stateMachinesPropName} = {}) =>
     toPairs(machines).some(([name, machine]) =>
-        !isNil(machine[getCurrentState(state, machines, statesProp)[name]][action.type])
+        !isNil(machine[getCurrentState(state, machines, stateMachinesPropName)[name]][action.type])
     )
 export function getNextState(state, action = {}) {
-    const currentState = getCurrentState(state, this.machines, this.statesProp)
+    const currentState = getCurrentState(state, this.machines, this.stateMachinesPropName)
 
     return toPairs(this.machines)
         .map(([name, machine]) => {
@@ -166,9 +226,9 @@ export function getNextState(state, action = {}) {
         })
         .reduce(listOfPairsToOneObject, {})
 }
-export function getNextStateForMachine(machineName = '', statesProp = 'states') {
+export function getNextStateForMachine(machineName = '', stateMachinesPropName = 'states') {
     return (state, action = {}) => {
-        const currentState = state[statesProp][machineName]
+        const currentState = state[stateMachinesPropName][machineName]
         if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
             return this.machines[machineName][currentState][action.type]
         }

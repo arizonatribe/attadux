@@ -1,104 +1,120 @@
-import {concat, has, is, isEmpty, isNil, map, mergeDeepWith, zipObj} from 'ramda'
+import {and, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
 import spected from 'spected'
 import {
+    anyValidationFailures,
+    concatOrReplace,
+    createPayloadValidator,
     invokeIfFn,
-    createConstants,
+    leftValIfRightIsTrue,
+    leftValIfRightIsNotTrue,
     createMachines,
     createExtender,
     getDefaultStateForMachines,
     getNextState,
     getNextStateForMachine,
+    pruneInvalidFields,
     currentStateHasType,
     deriveSelectors
 } from './helpers'
-
-export const duxDefaults = {
-    consts: {},
-    creators: {},
-    machines: {},
-    selectors: {},
-    types: [],
-    validators: {}
-}
+import {duxDefaults, validateAndSetValues, setProp} from './schema'
+import {isPlainObj} from './is'
 
 export default class Duck {
     constructor(opts = {}) {
-        this.options = {...duxDefaults, ...opts}
+        Object.assign(this, validateAndSetValues({...duxDefaults, ...opts}))
 
-        const {
-            useTransitions = true,
-            strictTransitions = false,
-            stateMachinesPropName = 'states',
-            namespace,
-            store,
-            types,
-            consts,
-            initialState,
-            machines,
-            creators,
-            selectors,
-            validators
-        } = this.options
-
-        /*
-         * Determines whether the reducer is canceled when a given action
-         * is not listed among the accepted inputs for the current state
-         * This does not mean you only accept actions which change state,
-         * but rather you that you whitelist (or register) every action
-         * and set their value to remain in the current state.
-         */
-        if (is(Boolean, strictTransitions)) {
-            this.strict = strictTransitions
-        }
-
-        this.statesProp = stateMachinesPropName
-        this.consts = createConstants(consts)
-        this.types = zipObj(types, types.map(type => `${namespace}/${store}/${type}`))
-        this.validators = map(spected, invokeIfFn(validators)(this))
-        this.machines = createMachines(invokeIfFn(machines)(this), this)
-        this.initialState = invokeIfFn(initialState)(this)
-        if (!isEmpty(this.machines)) {
-            this.initialState = {
-                ...(is(Object, this.initialState) ? this.initialState : {}),
-                [stateMachinesPropName]: getDefaultStateForMachines(this.machines)
+        setProp.call(this, 'validators', () => map(spected, invokeIfFn(this.options.validators)(this)))
+        setProp.call(this, 'machines', () => createMachines(invokeIfFn(this.options.machines)(this), this))
+        setProp.call(this, 'initialState', () => {
+            const initial = invokeIfFn(this.options.initialState)(this)
+            return isEmpty(this.machines) ? initial : {
+                ...(isPlainObj(initial) ? initial : {}),
+                [this.stateMachinesPropName]: getDefaultStateForMachines(this.machines)
             }
+        })
+        setProp.call(this, 'selectors', () => deriveSelectors(invokeIfFn(this.options.selectors)(this)))
+        setProp.call(this, 'creators', () => invokeIfFn(this.options.creators)(this))
+        setProp.call(this, 'reducer', () => (
+            and(!isEmpty(this.machines), or(this.strictTransitions, this.useTransitions)) ?
+            this.transitions.bind(this) : this.reducer.bind(this)
+        ))
+
+        if (has('validators', this)) {
+            this.isPayloadValid = createPayloadValidator(this.validators)
         }
-        this.selectors = deriveSelectors(invokeIfFn(selectors)(this))
-        this.creators = invokeIfFn(creators)(this)
-        this.reducer = (!isEmpty(this.machines) &&
-            (strictTransitions === true || useTransitions === true)) ?
-            this.transitions.bind(this) :
-            this.reducer.bind(this)
-        this.getNextState = getNextState.bind(this)
-        this.getNextStateForMachine = getNextStateForMachine.bind(this)
+        if (has('machines', this)) {
+            this.getNextState = getNextState.bind(this)
+            this.getNextStateForMachine = getNextStateForMachine.bind(this)
+        }
     }
 
     transitions(state, action = {}) {
-        const {initialState, statesProp, strict, options: {reducer}} = this
+        const {initialState, stateMachinesPropName, strictTransitions, options: {reducer}} = this
         const getState = () => {
             if (isNil(state)) {
                 return initialState
-            } else if (has(statesProp, state)) {
+            } else if (has(stateMachinesPropName, state)) {
                 return state
             }
             
-            return {...state, [statesProp]: initialState[statesProp]}
+            return {...state, [stateMachinesPropName]: initialState[stateMachinesPropName]}
         }
 
-        if (strict && !currentStateHasType(getState(), action, this)) {
+        if (strictTransitions && !currentStateHasType(getState(), action, this)) {
             return getState()
         }
 
         const states = this.getNextState(getState(), action, this)
 
         return {
-            ...reducer({...getState(), [statesProp]: states}, action, this),
-            [statesProp]: states
+            ...reducer({...getState(), [stateMachinesPropName]: states}, action, this),
+            [stateMachinesPropName]: states
         }
     }
 
     reducer(state, action = {}) {
-        return this.options.reducer(isNil(state) ? this.initialState : state, action, this)
+        const {options: {reducer}, validators, cancelReducerOnValidationError} = this
+        const getState = () => (isNil(state) ? this.initialState : state)
+
+        if (isEmpty(validators)) {
+            return reducer(getState(), action, this)
+        }
+
+        let validationResult = {}
+        const isActionValidator = has(action.type, validators)
+        if (isActionValidator) {
+            validationResult = validators[action.type](action)
+        } else if (has('reducer', validators)) {
+            validationResult = validators.reducer(getState())
+        }
+
+        if (!anyValidationFailures(validationResult)) {
+            return reducer(getState(), action, this)
+        } else if (cancelReducerOnValidationError === true) {
+            return getState()
+        }
+
+        if (isActionValidator) {
+            return reducer(getState(), {
+                ...pruneInvalidFields(action, validationResult),
+                validationErrors: validationResult
+            }, this)
+        }
+
+        const validationsWithOriginalState = mergeDeepWith(
+            leftValIfRightIsNotTrue,
+            getState(),
+            validationResult
+        )
+
+        return {
+            ...mergeDeepWith(
+                leftValIfRightIsTrue,
+                isActionValidator ? action : reducer(getState(), action, this),
+                validationsWithOriginalState
+            ),
+            validationErrors: validationResult
+        }
     }
 
     extend(opts) {
@@ -115,7 +131,7 @@ export default class Duck {
             ...extendProp('selectors'),
             ...extendProp('creators'),
             types: [...parentOptions.types, ...extendedOptions.types],
-            consts: mergeDeepWith(concat, parentOptions.consts, extendedOptions.consts),
+            consts: mergeDeepWith(concatOrReplace, parentOptions.consts, extendedOptions.consts),
             reducer: (state, action, duck) => {
                 const reduced = parentOptions.reducer(isNil(state) ? duck.initialState : state, action, duck)
                 return (isNil(extendedOptions.reducer)) ? reduced : extendedOptions.reducer(reduced, action, duck)
