@@ -115,6 +115,34 @@ test('validators:', (t) => {
         nt.end()
     })
 
+    test('...which can also be applied as a post-reducer, on that entire section of the store', (nt) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            reducer,
+            initialState,
+            types: ['CREATE_USER'],
+            validators: {reducer: validators.auth}
+        })
+        nt.deepEqual(
+            duck.reducer(initialState, {
+                type: `${namespace}/${store}/CREATE_USER`,
+                user: {age: 11, name: {first: 'H', last: 'Potter'}}
+            }), {
+                email: '',
+                user: {name: {last: 'Potter'}},
+                validationErrors: {
+                    email: ['Email is required', 'Invalid format for email address'],
+                    user: {
+                        age: ['You are too young; please go get your parents'],
+                        name: {first: ['Come on now; be serious. What\'s your REAL name?']}
+                    }
+                }
+            },
+            'verify that invalid fields not updated in the store by the reducer AND that validationErrors were populated'
+        )
+        nt.end()
+    })
     test('...which can also be configured to cancel the reducer if validations fail', (nt) => {
         const duck = new Duck({
             namespace,

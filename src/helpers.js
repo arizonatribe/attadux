@@ -35,7 +35,7 @@ export const pruneInvalidFields = curry((original, validations) =>
     compose(
         reduce((prunedObj, [key, val]) => {
             const value = isPlainObj(val) ? pruneInvalidFields(original[key], val) : val
-            if (isPlainObj(val) && isEmpty(value)) {
+            if (isPlainObj(value) && isEmpty(value)) {
                 return prunedObj
             }
             return {
@@ -48,18 +48,17 @@ export const pruneInvalidFields = curry((original, validations) =>
     )(validations)
 )
 
-export const pruneValidatedFields = (validations) =>
-    compose(
-        reduce((prunedObj, [key, val]) => {
-            const value = isPlainObj(val) ? pruneValidatedFields(val) : val
-            if (isPlainObj(val) && isEmpty(value)) {
-                return prunedObj
-            }
-            return {...prunedObj, [key]: val}
-        }, {}),
-        reject(pairs => pairs[1] === true),
-        toPairsIn
-    )(validations)
+export const pruneValidatedFields = compose(
+    reduce((prunedObj, [key, val]) => {
+        const value = isPlainObj(val) ? pruneValidatedFields(val) : val
+        if (isPlainObj(value) && isEmpty(value)) {
+            return prunedObj
+        }
+        return {...prunedObj, [key]: value}
+    }, {}),
+    reject(pairs => pairs[1] === true),
+    toPairsIn
+)
 
 export const anyValidationFailures = (validations = {}) =>
     compose(

@@ -6,13 +6,13 @@ import {
     createPayloadValidator,
     invokeIfFn,
     leftValIfRightIsTrue,
-    leftValIfRightIsNotTrue,
     createMachines,
     createExtender,
     getDefaultStateForMachines,
     getNextState,
     getNextStateForMachine,
     pruneInvalidFields,
+    pruneValidatedFields,
     currentStateHasType,
     deriveSelectors
 } from './helpers'
@@ -80,41 +80,40 @@ export default class Duck {
             return reducer(getState(), action, this)
         }
 
-        let validationResult = {}
         const isActionValidator = has(action.type, validators)
-        if (isActionValidator) {
-            validationResult = validators[action.type](action)
-        } else if (has('reducer', validators)) {
-            validationResult = validators.reducer(getState())
+        const isPostReducerValidator = has('reducer', validators)
+
+        if (isActionValidator || isPostReducerValidator) {
+            const validate = (validator, data) => {
+                const validationResult = validator(data)
+                if (!anyValidationFailures) {
+                    return data
+                } else if (cancelReducerOnValidationError === true) {
+                    return getState()
+                } else if (isActionValidator) {
+                    return reducer(getState(), {
+                        ...pruneInvalidFields(action, validationResult),
+                        validationErrors: pruneValidatedFields(validationResult)
+                    }, this)
+                }
+
+                return {
+                    ...getState(),
+                    ...pruneInvalidFields(
+                        mergeDeepWith(leftValIfRightIsTrue, data, validationResult), validationResult
+                    ),
+                    validationErrors: pruneValidatedFields(validationResult)
+                }
+            }
+
+            if (isActionValidator) {
+                return validate(validators[action.type], action)
+            } else if (isPostReducerValidator) {
+                return validate(validators.reducer, reducer(getState(), action, this))
+            }
         }
 
-        if (!anyValidationFailures(validationResult)) {
-            return reducer(getState(), action, this)
-        } else if (cancelReducerOnValidationError === true) {
-            return getState()
-        }
-
-        if (isActionValidator) {
-            return reducer(getState(), {
-                ...pruneInvalidFields(action, validationResult),
-                validationErrors: validationResult
-            }, this)
-        }
-
-        const validationsWithOriginalState = mergeDeepWith(
-            leftValIfRightIsNotTrue,
-            getState(),
-            validationResult
-        )
-
-        return {
-            ...mergeDeepWith(
-                leftValIfRightIsTrue,
-                isActionValidator ? action : reducer(getState(), action, this),
-                validationsWithOriginalState
-            ),
-            validationErrors: validationResult
-        }
+        return reducer(getState(), action, this)
     }
 
     extend(opts) {
