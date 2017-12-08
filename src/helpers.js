@@ -26,7 +26,7 @@ import {
     valuesIn,
     zipObj
 } from 'ramda'
-import {needsExtraction, isPrimitive, isTransitionPossible, isPlainObj} from './is'
+import {needsExtraction, isPrimitiveish, isTransitionPossible, isPlainObj} from './is'
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
@@ -105,7 +105,7 @@ export const leftValIfRightIsNotTrue = (left, right) => (right !== true ? left :
 export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
         return parent
-    } else if (isPrimitive(child) || is(RegExp, child) || is(Function, child)) {
+    } else if (isPrimitiveish(child) || is(Function, child)) {
         return child
     }
     return [...parent, ...child]
@@ -155,13 +155,13 @@ export const createConstants = (consts = {}) => {
     /* no nested functions or objects, just primitives or conversion of arrays
      * of primitives into simple objects whose keys and vals are the same */
 
-    if (!isPrimitive(consts) && !is(Array, consts) && is(Object, consts)) {
+    if (!isPrimitiveish(consts) && !is(Array, consts) && is(Object, consts)) {
         return Object.freeze(
             toPairs(consts).map(([name, value]) => {
                 if (is(Array, value)) {
                     /* Creates an object whose keys and values are identical */
-                    return [name, Object.freeze(zipObj(value.filter(isPrimitive), value.filter(isPrimitive)))]
-                } else if (isPrimitive(value) || is(RegExp, value)) {
+                    return [name, Object.freeze(zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish)))]
+                } else if (isPrimitiveish(value)) {
                     /* Otherwise skips any modifications */
                     return [name, value]
                 }

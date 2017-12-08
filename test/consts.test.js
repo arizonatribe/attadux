@@ -58,6 +58,18 @@ test('creates a constant whose value is an array', (t) => {
     t.end()
 })
 
+test('converting an array of const values does not break when there are duplicates', (t) => {
+    const duck = new Duck({consts: {frameworks: ['backbone', 'ember', 'angular', 'react', 'react', 'vue']}})
+    t.deepEqual(duck.consts.frameworks, {
+        backbone: 'backbone',
+        ember: 'ember',
+        angular: 'angular',
+        react: 'react',
+        vue: 'vue'
+    })
+    t.end()
+})
+
 test('cannot overwrite a constant', (t) => {
     const duck = new Duck({consts: {
         today: new Date(),

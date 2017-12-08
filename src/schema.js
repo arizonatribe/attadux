@@ -1,6 +1,6 @@
 import {all, anyPass, both, either, evolve, has, keys, identity, is, pick} from 'ramda'
 import spected from 'spected'
-import {isPrimitive, isPlainObj, isNotBlankString} from './is'
+import {isPrimitiveish, isPlainObj, isNotBlankString} from './is'
 import {
     anyValidationFailures,
     createConstants,
@@ -43,7 +43,7 @@ export const duxSchema = {
     validators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     reducer: [[is(Function), 'must be a function']],
     initialState: [[
-        anyPass([isPrimitive, isPlainObj, is(Function)]),
+        anyPass([isPrimitiveish, isPlainObj, is(Function)]),
         'must be an object, a function returning an object, or a primitive value'
     ]]
 }

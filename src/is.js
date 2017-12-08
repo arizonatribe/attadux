@@ -10,10 +10,11 @@ export const isStringieThingie = allPass([
     either(is(Number), is(String)),
     isNotNil
 ])
-export const isPrimitive = anyPass([
+export const isPrimitiveish = anyPass([
     is(Boolean),
     is(Number),
     is(String),
+    is(RegExp),
     is(Date)
 ])
 export const isTransitionPossible = (transitionName, currentState, machine) =>
