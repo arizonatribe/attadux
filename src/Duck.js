@@ -1,4 +1,5 @@
 import {and, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
+
 import spected from 'spected'
 import {
     anyValidationFailures,
@@ -6,6 +7,7 @@ import {
     createPayloadValidator,
     invokeIfFn,
     leftValIfRightIsTrue,
+    mapPath,
     createMachines,
     createExtender,
     getDefaultStateForMachines,
@@ -17,7 +19,7 @@ import {
     deriveSelectors
 } from './helpers'
 import {duxDefaults, validateAndSetValues, setProp} from './schema'
-import {isPlainObj} from './is'
+import {hasNestedProp, isPlainObj} from './is'
 
 export default class Duck {
     constructor(opts = {}) {
@@ -29,7 +31,7 @@ export default class Duck {
             const initial = invokeIfFn(this.options.initialState)(this)
             return isEmpty(this.machines) ? initial : {
                 ...(isPlainObj(initial) ? initial : {}),
-                [this.stateMachinesPropName]: getDefaultStateForMachines(this.machines)
+                ...mapPath(this.stateMachinesPropName, getDefaultStateForMachines(this.machines))
             }
         })
         setProp.call(this, 'selectors', () => deriveSelectors(invokeIfFn(this.options.selectors)(this)))
@@ -50,26 +52,26 @@ export default class Duck {
 
     transitions(state, action = {}) {
         const {initialState, stateMachinesPropName, strictTransitions, options: {reducer}} = this
+
         const getState = () => {
             if (isNil(state)) {
                 return initialState
-            } else if (has(stateMachinesPropName, state)) {
+            } else if (hasNestedProp(stateMachinesPropName, state)) {
                 return state
             }
-            
-            return {...state, [stateMachinesPropName]: initialState[stateMachinesPropName]}
+            return {
+                ...state,
+                ...mapPath(stateMachinesPropName, initialState)
+            }
         }
 
         if (strictTransitions && !currentStateHasType(getState(), action, this)) {
             return getState()
         }
 
-        const states = this.getNextState(getState(), action, this)
+        const states = mapPath(stateMachinesPropName, this.getNextState(getState(), action, this))
 
-        return {
-            ...reducer({...getState(), [stateMachinesPropName]: states}, action, this),
-            [stateMachinesPropName]: states
-        }
+        return {...reducer({...getState(), ...states}, action, this), ...states}
     }
 
     reducer(state, action = {}) {

@@ -279,6 +279,81 @@ test('state machines:', (t) => {
         nt.end()
     })
 
+    t.test('...allows even custom prop names (for tracking machine states) that are nested paths (dot separated)', (nt) => {
+        const duck = new Duck({
+            stateMachinesPropName: 'forms.login',
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer
+        })
+
+        nt.deepEqual(
+            duck.initialState.forms.login,
+            {auth: 'initial'},
+            'initial state should include nested object path \'{forms: {login: {}}\' even if not set up by the user'
+        )
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+            {...initialState, forms: {login: {auth: 'inProgress'}}},
+            'the \'{forms: {login: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
+        )
+
+        nt.end()
+    })
+
+    t.test('...allows custom prop names (for tracking machine states) that are an  array of string paths', (nt) => {
+        const duck = new Duck({
+            stateMachinesPropName: ['forms', 'login'],
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer
+        })
+
+        nt.deepEqual(
+            duck.initialState.forms.login,
+            {auth: 'initial'},
+            'initial state should include nested object path \'{forms: {login: {}}\' even if not set up by the user'
+        )
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+            {...initialState, forms: {login: {auth: 'inProgress'}}},
+            'the \'{forms: {login: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
+        )
+
+        nt.end()
+    })
+
+    t.test('...validates nested prop paths which are invalid and ensures machine states are still tracked in the store', (nt) => {
+        const duck = new Duck({
+            stateMachinesPropName: [1, 2, new Date()],
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer
+        })
+
+        nt.deepEqual(
+            duck.initialState.states,
+            {auth: 'initial'},
+            'initial state should fall back to \'states\' as the path to track current state'
+        )
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
+            {...initialState, states: {auth: 'inProgress'}},
+            'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
+        )
+
+        nt.end()
+    })
+
     t.test('...wont\'t move to an invalid state (also using the manual reducer pattern)',
         (nt) => {
             const duck = new Duck({

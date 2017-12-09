@@ -1,12 +1,16 @@
 import {
     always,
     any,
+    assocPath,
     both,
     compose,
     converge,
     curry,
     either,
+    filter,
     has,
+    identity,
+    ifElse,
     init,
     is,
     isEmpty,
@@ -15,6 +19,7 @@ import {
     keys,
     last,
     memoize,
+    path,
     pick,
     pickBy,
     reduce,
@@ -26,7 +31,14 @@ import {
     valuesIn,
     zipObj
 } from 'ramda'
-import {needsExtraction, isPrimitiveish, isTransitionPossible, isPlainObj} from './is'
+import {
+    isValidPropName,
+    isNotBlankString,
+    needsExtraction,
+    isPrimitiveish,
+    isTransitionPossible,
+    isPlainObj
+} from './is'
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
@@ -197,15 +209,28 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     return mName
 }
 
+export const mapPath = (propPath, accumObj) =>
+    assocPath(propPath, accumObj, {})
+export const getStateMachinesPropPath = (stateMachinesPropName) => ((
+        is(String, stateMachinesPropName)
+        && stateMachinesPropName.includes('.')
+        && isValidPropName(stateMachinesPropName)
+    ) ? stateMachinesPropName.split('.') :
+    compose(
+        ifElse(isEmpty, ['states'], identity),
+        filter(isNotBlankString),
+        ifElse(is(String), Array, identity)
+    )(stateMachinesPropName)
+)
 export const getDefaultStateForMachines = (machines = {}) => {
     const machineNames = Object.keys(machines || {})
     return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
 }
-export const getCurrentState = (state, machines = {}, stateMachinesPropName = 'states') => {
+export const getCurrentState = (state, machines = {}, stateMachinesPropName) => {
     const machineNames = Object.keys(machines || {})
     return {
         ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
-        ...pick(machineNames, state[stateMachinesPropName])
+        ...pick(machineNames, path(stateMachinesPropName, state))
     }
 }
 export const currentStateHasType = (state, action = {}, {machines, stateMachinesPropName} = {}) =>
@@ -225,9 +250,9 @@ export function getNextState(state, action = {}) {
         })
         .reduce(listOfPairsToOneObject, {})
 }
-export function getNextStateForMachine(machineName = '', stateMachinesPropName = 'states') {
+export function getNextStateForMachine(machineName = '') {
     return (state, action = {}) => {
-        const currentState = state[stateMachinesPropName][machineName]
+        const currentState = path(this.stateMachinesPropName, state)[machineName]
         if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
             return this.machines[machineName][currentState][action.type]
         }

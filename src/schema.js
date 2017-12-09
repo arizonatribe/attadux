@@ -5,11 +5,13 @@ import {
     anyValidationFailures,
     createConstants,
     createTypes,
+    getStateMachinesPropPath,
     pruneInvalidFields,
     pruneValidatedFields
 } from './helpers'
 
 export const duxDefaults = {
+    cancelReducerOnValidationError: false,
     strictTransitions: false,
     useTransitions: true,
     stateMachinesPropName: 'states',
@@ -34,7 +36,10 @@ export const duxSchema = {
     cancelReducerOnValidationError: [[is(Boolean), 'must be a bool']],
     store: [[is(String), 'must be a string'], [isNotBlankString, 'Cannot be blank']],
     namespace: [[is(String), 'must be a string'], [isNotBlankString, 'Cannot be blank']],
-    stateMachinesPropName: [[is(String), 'must be a string'], [isNotBlankString, 'Cannot be blank']],
+    stateMachinesPropName: [[
+        either(both(is(String), isNotBlankString), both(is(Array), all(both(is(String), isNotBlankString)))),
+        'must be a string (or array of strings)'
+    ]],
     consts: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     creators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     machines: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
@@ -63,11 +68,12 @@ export const validateAndSetValues = (values = {}) => {
         strictTransitions: identity,
         useTransitions: identity,
         cancelReducerOnValidationError: identity,
-        stateMachinesPropName: identity,
+        stateMachinesPropName: getStateMachinesPropPath,
         consts: createConstants,
         types: createTypes(validatedOptions)
     }
     return {
+        stateMachinesPropName: ['states'],
         ...evolve(evolvers, pick(keys(evolvers), validatedOptions)),
         ...(anyValidationFailures(validationsResult) ? {
             invalidOptions: pruneValidatedFields(validationsResult)
