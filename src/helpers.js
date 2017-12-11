@@ -15,6 +15,7 @@ import {
     is,
     isEmpty,
     isNil,
+    map,
     mergeDeepWith,
     keys,
     last,
@@ -98,18 +99,6 @@ export const createDuckSelector = (extractFunction) => ({
     }
 })
 
-export const mergeFailedValidationsWithOriginalState = (currentState, validations) =>
-    mergeDeepWith(
-        (val, stat) => (val === true ? val : stat),
-        validations,
-        currentState
-    )
-export const resetFailuresToOriginalState = (possibleNextState, validationsWithOriginalValues) =>
-    mergeDeepWith(
-        (val, stat) => (val === true ? stat : val),
-        validationsWithOriginalValues,
-        possibleNextState
-    )
 export const concatOrReplace = (left, right) =>
     (is(Array, left) ? [...left, ...(is(Array, right) ? right : [right])] : right)
 export const leftValIfRightIsTrue = (left, right) => (right === true ? left : right)
@@ -152,10 +141,12 @@ export const createMachineStates = (machine = {}, {types} = {}) => (
     )
 )
 export const createMachines = (machines = {}, context = {}) => (
-    Object.freeze(toPairs(machines)
-        .map(([name, machine]) => ([name, createMachineStates(machine, context)]))
-        .reduce(listOfPairsToOneObject, {})
-    )
+    compose(
+        Object.freeze,
+        reduce(listOfPairsToOneObject, {}),
+        map(([name, machine]) => ([name, createMachineStates(machine, context)])),
+        toPairs
+    )(machines)
 )
 /**
  * Helper utility to assist in creating the constants and making them immutable.
