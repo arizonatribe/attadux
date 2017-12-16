@@ -1,11 +1,14 @@
 import {
+    __,
     always,
     any,
     assocPath,
     both,
+    complement,
     compose,
     converge,
     curry,
+    defaultTo,
     either,
     filter,
     has,
@@ -23,6 +26,7 @@ import {
     path,
     pick,
     pickBy,
+    prop,
     reduce,
     reject,
     toPairs,
@@ -40,6 +44,8 @@ import {
     isTransitionPossible,
     isPlainObj
 } from './is'
+
+const asArray = str => (is(Array, str) ? str : Array(str))
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
@@ -217,23 +223,26 @@ export const getDefaultStateForMachines = (machines = {}) => {
     const machineNames = Object.keys(machines || {})
     return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
 }
-export const getCurrentState = (state, machines = {}, stateMachinesPropName) => {
-    const machineNames = Object.keys(machines || {})
-    return {
-        ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
-        ...pick(machineNames, path(stateMachinesPropName, state))
-    }
-}
+export const getCurrentState = (state, machines = {}, stateMachinesPropName = '') => ({
+    ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, keys(machines)),
+    ...pick(keys(machines), path(asArray(stateMachinesPropName), state))
+})
 export const currentStateHasType = (state, action = {}, {machines, stateMachinesPropName} = {}) =>
     toPairs(machines).some(([name, machine]) =>
-        !isNil(machine[getCurrentState(state, machines, stateMachinesPropName)[name]][action.type])
+        compose(
+            complement(isNil),
+            prop(action.type),
+            defaultTo({}),
+            prop(__, machine),
+            prop(name)
+        )(getCurrentState(state, machines, stateMachinesPropName))
     )
 export function getNextState(state, action = {}) {
     const currentState = getCurrentState(state, this.machines, this.stateMachinesPropName)
 
     return toPairs(this.machines)
         .map(([name, machine]) => {
-            const nextState = machine[currentState[name]][action.type]
+            const nextState = prop(action.type, machine[currentState[name]] || {})
             if (isNil(nextState)) {
                 return [name, currentState[name]]
             }
@@ -243,7 +252,7 @@ export function getNextState(state, action = {}) {
 }
 export function getNextStateForMachine(machineName = '') {
     return (state, action = {}) => {
-        const currentState = path(this.stateMachinesPropName, state)[machineName]
+        const currentState = path(asArray(this.stateMachinesPropName), state)[machineName]
         if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
             return this.machines[machineName][currentState][action.type]
         }

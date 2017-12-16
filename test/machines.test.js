@@ -10,13 +10,15 @@ test('state machines:', (t) => {
         user: {}
     }
     const types = [
+        'AGREE_TO_TERMS',
         'ATTEMPT_LOGIN',
         'ATTEMPT_LOGOUT',
         'CLEAR_ERROR',
         'LOGIN_SUCCESSFUL',
         'LOGIN_ERROR',
         'LOGOUT_SUCCESSFUL',
-        'LOGOUT_ERROR'
+        'LOGOUT_ERROR',
+        'REJECT_TERMS'
     ]
     const reducer = (state, action, dux) => {
         switch (action.type) {
@@ -114,6 +116,14 @@ test('state machines:', (t) => {
                 [d.types.ATTEMPT_LOGIN]: 'inProgress',
                 [d.types.CLEAR_ERROR]: 'loggedOut'
             }
+        },
+        termsOfService: {
+            initial: {
+                [d.types.AGREE_TO_TERMS]: 'agreed',
+                [d.types.REJECTED_TERMS]: 'rejected'
+            },
+            agreed: {},
+            rejected: {}
         }
     })
 
@@ -169,7 +179,7 @@ test('state machines:', (t) => {
             }
             nt.deepEqual(
                 duck.reducer({...initialState, states: {auth: 'initial'}}, action),
-                {...initialState, states: {auth: 'initial'}, user: {id: 123, name: 'David'}},
+                {...initialState, states: {auth: 'initial', termsOfService: 'initial'}, user: {id: 123, name: 'David'}},
                 'state cannot change to \'loggedIn\' from \'initial\', but must transition to \'inProgress\' and wait there'
             )
             nt.end()
@@ -180,7 +190,7 @@ test('state machines:', (t) => {
         const duck = new Duck({namespace, store, types, machines, initialState, reducer})
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, states: {auth: 'inProgress'}},
+            {...initialState, states: {auth: 'inProgress', termsOfService: 'initial'}},
             'state has changed from \'initial\' to \'inProgress\''
         )
         nt.end()
@@ -242,13 +252,41 @@ test('state machines:', (t) => {
 
         nt.deepEqual(
             duck.initialState.states,
-            {auth: 'initial'},
+            {auth: 'initial', termsOfService: 'initial'},
             'initial state should include \'states\' even if not set up by the user'
         )
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, states: {auth: 'inProgress'}},
+            {...initialState, states: {auth: 'inProgress', termsOfService: 'initial'}},
             'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
+        )
+
+        nt.end()
+    })
+
+    t.test('...can move to a permanent state when desired', (nt) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer
+        })
+        const state = {
+            ...initialState,
+            states: {auth: 'initial', termsOfService: 'agreed'}
+        }
+
+        nt.deepEqual(
+            duck.reducer(initialState, {type: `${namespace}/${store}/AGREE_TO_TERMS`}),
+            state,
+            'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'accepted\''
+        )
+        nt.deepEqual(
+            duck.reducer(state, {type: `${namespace}/${store}/REJECT_TERMS`}),
+            state,
+            'gracefully confirms the current state has no possible transitions'
         )
 
         nt.end()
@@ -267,12 +305,12 @@ test('state machines:', (t) => {
 
         nt.deepEqual(
             duck.initialState.authStates,
-            {auth: 'initial'},
+            {auth: 'initial', termsOfService: 'initial'},
             'initial state should include \'authStates\' even if not set up by the user'
         )
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, authStates: {auth: 'inProgress'}},
+            {...initialState, authStates: {auth: 'inProgress', termsOfService: 'initial'}},
             'the \'authStates\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
         )
 
@@ -292,12 +330,12 @@ test('state machines:', (t) => {
 
         nt.deepEqual(
             duck.initialState.forms.login,
-            {auth: 'initial'},
+            {auth: 'initial', termsOfService: 'initial'},
             'initial state should include nested object path \'{forms: {login: {}}\' even if not set up by the user'
         )
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, forms: {login: {auth: 'inProgress'}}},
+            {...initialState, forms: {login: {auth: 'inProgress', termsOfService: 'initial'}}},
             'the \'{forms: {login: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
         )
 
@@ -317,12 +355,12 @@ test('state machines:', (t) => {
 
         nt.deepEqual(
             duck.initialState.forms.login,
-            {auth: 'initial'},
+            {auth: 'initial', termsOfService: 'initial'},
             'initial state should include nested object path \'{forms: {login: {}}\' even if not set up by the user'
         )
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, forms: {login: {auth: 'inProgress'}}},
+            {...initialState, forms: {login: {auth: 'inProgress', termsOfService: 'initial'}}},
             'the \'{forms: {login: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
         )
 
@@ -342,12 +380,12 @@ test('state machines:', (t) => {
 
         nt.deepEqual(
             duck.initialState.states,
-            {auth: 'initial'},
+            {auth: 'initial', termsOfService: 'initial'},
             'initial state should fall back to \'states\' as the path to track current state'
         )
         nt.deepEqual(
             duck.reducer(initialState, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, states: {auth: 'inProgress'}},
+            {...initialState, states: {auth: 'inProgress', termsOfService: 'initial'}},
             'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'inProgress\''
         )
 
