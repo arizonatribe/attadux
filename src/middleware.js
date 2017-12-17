@@ -1,40 +1,64 @@
+/* eslint "max-len": "off" */
 import {
     __,
+    always,
     assocPath,
     compose,
+    defaultTo,
+    equals,
+    filter,
+    isEmpty,
+    keys,
+    none,
     nth,
     path,
     prop,
     split,
+    values,
     T
 } from 'ramda'
-import {currentStateHasType} from './helpers'
+import {isActionTypeInCurrentState} from './helpers'
+import {isPlainObj} from './is'
 
-export default (dux) => ({getState}) => next => action => {
-    const {
-        machines,
-        getNextState = T,
-        isPayloadValid = T,
-        strictTransitions = false,
-        stateMachinesPropName = 'states'
-    } = compose(
-        path(__, dux),
-        nth(1),
-        split('/'),
-        prop('type')
-    )(action)
+const isDux = compose(
+    equals('Duck'),
+    path(['constructor', 'name']),
+    defaultTo({})
+)
 
-    if (!isPayloadValid(action) || (
-        strictTransitions &&
-        !currentStateHasType(getState(), action, {machines, stateMachinesPropName})
-    )) {
-        return false
+export default (dux) => {
+    if (!isPlainObj(dux) || isEmpty(keys(dux)) || none(isDux, values(dux))) {
+        throw new Error('No ducks have been provided! To create the Attadux middleware please provide an Object containing one or more ducks')
     }
 
-    return {
-        ...next(action),
-        ...assocPath(
-            stateMachinesPropName, getNextState(getState(), action), {}
-        )
+    const validDux = filter(isDux, dux)
+
+    return ({getState}) => next => action => {
+        const {
+            machines,
+            isPayloadValid = T,
+            getNextState = always({}),
+            strictTransitions = false,
+            stateMachinesPropName = 'states'
+        } = compose(
+            path(__, validDux),
+            nth(1),
+            split('/'),
+            prop('type')
+        )(action)
+
+        if (!isPayloadValid(action) || (
+            strictTransitions &&
+            !isActionTypeInCurrentState(getState(), action, {machines, stateMachinesPropName})
+        )) {
+            return false
+        }
+
+        return {
+            ...next(action),
+            ...assocPath(
+                stateMachinesPropName, getNextState(getState(), action), {}
+            )
+        }
     }
 }

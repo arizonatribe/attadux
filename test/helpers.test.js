@@ -38,7 +38,7 @@ test('getCurrentState', (t) => {
 
     test('...retrieves current state of each machine', (nt) => {
         nt.deepEqual(
-            getCurrentState(initialState, machines, 'states'),
+            getCurrentState(initialState, {machines, stateMachinesPropName: 'states'}),
             {auth: 'initial', termsOfService: 'initial'},
             'verify the current state of \'initial\''
         )

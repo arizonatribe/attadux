@@ -1,4 +1,18 @@
-import {allPass, anyPass, complement, compose, defaultTo, either, has, is, isNil, not, path, toString} from 'ramda'
+import {
+    allPass,
+    anyPass,
+    complement,
+    compose,
+    curry,
+    defaultTo,
+    either,
+    has,
+    is,
+    isNil,
+    not,
+    path,
+    toString
+} from 'ramda'
 
 export const coerceToString = val => (is(String, val) ? val : toString(val))
 export const needsExtraction = selector => (selector.needsExtraction === true)
@@ -19,9 +33,11 @@ export const isPrimitiveish = anyPass([
     is(RegExp),
     is(Date)
 ])
-export const isTransitionPossible = (transitionName, currentState, machine) =>
+export const isTransitionPossible = curry((transitionName, currentState, machine) =>
     compose(
         has(coerceToString(transitionName)),
         defaultTo({}),
-        path([coerceToString(currentState)])
+        path([coerceToString(currentState)]),
+        defaultTo({})
     )(machine)
+)
