@@ -1,17 +1,21 @@
 import {
+    __,
+    allPass,
     always,
     any,
-    assocPath,
     both,
     compose,
+    contains,
     converge,
     curry,
+    defaultTo,
     either,
     filter,
     has,
     identity,
     ifElse,
     init,
+    insert,
     is,
     isEmpty,
     isNil,
@@ -20,11 +24,14 @@ import {
     keys,
     last,
     memoize,
+    pair,
     path,
     pick,
     pickBy,
+    prop,
     reduce,
     reject,
+    split,
     toPairs,
     toPairsIn,
     type as getType,
@@ -35,11 +42,14 @@ import {
 import {
     isValidPropName,
     isNotBlankString,
+    isNotNil,
     needsExtraction,
     isPrimitiveish,
     isTransitionPossible,
     isPlainObj
 } from './is'
+
+const asArray = str => (is(Array, str) ? str : Array(str))
 
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
@@ -92,6 +102,22 @@ export const createPayloadValidator = (validators = {}) =>
             ({type}) => validators[type](action)
         )(action)
 
+/**
+ * Helper utility to assist in composing the selectors.
+ * Previously defined selectors can be used to derive future selectors.
+ *
+ * @param {object} selectors
+ * @returns {object} selectors, but now with access to fellow selectors
+ */
+export const deriveSelectors = (selectors = {}) =>
+    compose(
+        reduce((composedSelectors, [key, selector]) => ({
+            ...composedSelectors,
+            [key]: selector.justAddDuckSelectors(composedSelectors)
+        }), selectors),
+        toPairs,
+        pickBy(needsExtraction)
+    )(selectors)
 export const createSelector = (...selectors) =>
     memoize(converge(last(selectors), init(selectors)))
 export const createDuckSelector = (extractFunction) => ({
@@ -160,27 +186,33 @@ export const createMachines = (machines = {}, context = {}) => (
  * @param {object} constants object which must contain only primitive values or arrays of primitives
  * @returns {object} constants parsed, validated and frozen
  */
-export const createConstants = (consts = {}) => {
+export const createConstants = (consts = {}) => (
     /* no nested functions or objects, just primitives or conversion of arrays
      * of primitives into simple objects whose keys and vals are the same */
-
-    if (!isPrimitiveish(consts) && !is(Array, consts) && is(Object, consts)) {
-        return Object.freeze(
-            toPairs(consts).map(([name, value]) => {
+    (!isPrimitiveish(consts) && !is(Array, consts) && is(Object, consts)) ?
+        compose(
+            Object.freeze,
+            reduce(listOfPairsToOneObject, {}),
+            filter(isNotNil),
+            map(([name, value]) => {
                 if (is(Array, value)) {
                     /* Creates an object whose keys and values are identical */
-                    return [name, Object.freeze(zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish)))]
+                    return [
+                        name,
+                        Object.freeze(
+                            zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish))
+                        )
+                    ]
                 } else if (isPrimitiveish(value)) {
                     /* Otherwise skips any modifications */
                     return [name, value]
                 }
                 return null
-            }).filter(f => !isNil(f)).reduce(listOfPairsToOneObject, {})
-        )
-    }
-
-    return {}
-}
+            }),
+            toPairs
+        )(consts)
+    : {}
+)
 
 export const createTypes = ({namespace, store} = {}) =>
     types => zipObj(
@@ -196,7 +228,7 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     }
 
     let mName
-    Object.keys(machines).some(name => {
+    keys(machines).some(name => {
         if (isTransitionPossible(type, currentState, machines[name])) {
             mName = name
             return true
@@ -206,70 +238,58 @@ export const findMachineName = ({type, machineName} = {}, currentState = '', {ma
     return mName
 }
 
-export const mapPath = (propPath, accumObj) =>
-    assocPath(propPath, accumObj, {})
-export const getStateMachinesPropPath = (stateMachinesPropName) => ((
-        is(String, stateMachinesPropName)
-        && stateMachinesPropName.includes('.')
-        && isValidPropName(stateMachinesPropName)
-    ) ? stateMachinesPropName.split('.') :
+export const getStateMachinesPropPath = ifElse(
+    allPass([is(String), contains('.'), isValidPropName]),
+    split('.'),
     compose(
         ifElse(isEmpty, ['states'], identity),
         filter(isNotBlankString),
         ifElse(is(String), Array, identity)
-    )(stateMachinesPropName)
-)
-export const getDefaultStateForMachines = (machines = {}) => {
-    const machineNames = Object.keys(machines || {})
-    return reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames)
-}
-export const getCurrentState = (state, machines = {}, stateMachinesPropName) => {
-    const machineNames = Object.keys(machines || {})
-    return {
-        ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, machineNames),
-        ...pick(machineNames, path(stateMachinesPropName, state))
-    }
-}
-export const currentStateHasType = (state, action = {}, {machines, stateMachinesPropName} = {}) =>
-    toPairs(machines).some(([name, machine]) =>
-        !isNil(machine[getCurrentState(state, machines, stateMachinesPropName)[name]][action.type])
     )
+)
+export const getDefaultStateForMachines = (machines = {}) =>
+    reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, keys(machines || {}))
+export const getCurrentState = (state, {machines = {}, stateMachinesPropName = ''} = {}) => ({
+    ...reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, keys(machines)),
+    ...pick(keys(machines), path(asArray(stateMachinesPropName), state))
+})
 export function getNextState(state, action = {}) {
-    const currentState = getCurrentState(state, this.machines, this.stateMachinesPropName)
-
-    return toPairs(this.machines)
-        .map(([name, machine]) => {
-            const nextState = machine[currentState[name]][action.type]
-            if (isNil(nextState)) {
-                return [name, currentState[name]]
-            }
-            return [name, nextState]
-        })
-        .reduce(listOfPairsToOneObject, {})
+    const currentState = getCurrentState(state, this)
+    return compose(
+        reduce(listOfPairsToOneObject, {}),
+        map(([name, machine]) => compose(
+            pair(name),
+            ifElse(isNotNil, identity, always(currentState[name])),
+            prop(action.type),
+            defaultTo({}),
+            prop(currentState[name])
+        )(machine)),
+        toPairs
+    )(this.machines)
 }
 export function getNextStateForMachine(machineName = '') {
-    return (state, action = {}) => {
-        const currentState = path(this.stateMachinesPropName, state)[machineName]
-        if (isTransitionPossible(action.type, currentState, this.machines[machineName])) {
-            return this.machines[machineName][currentState][action.type]
-        }
-        return currentState
-    }
+    return (state, action = {}) =>
+        compose(
+            ifElse(
+                isTransitionPossible(action.type, __, prop(machineName, this.machines)),
+                compose(path(__, this.machines), insert(1, __, [machineName, action.type])),
+                identity
+            ),
+            prop(machineName),
+            defaultTo({}),
+            path(asArray(this.stateMachinesPropName))
+        )(state)
 }
-
-/**
- * Helper utility to assist in composing the selectors.
- * Previously defined selectors can be used to derive future selectors.
- *
- * @param {object} selectors
- * @returns {object} selectors, but now with access to fellow selectors
- */
-export const deriveSelectors = (selectors = {}) =>
-    compose(
-        reduce((composedSelectors, [key, selector]) => ({
-            ...composedSelectors,
-            [key]: selector.justAddDuckSelectors(composedSelectors)
-        }), selectors),
-        toPairs,
-        pickBy(needsExtraction)
-    )(selectors)
+export const isActionTypeInCurrentState = (state, action = {}, {machines, stateMachinesPropName}) => {
+    const currentState = getCurrentState(state, {machines, stateMachinesPropName})
+    return compose(
+        any(([name, machine]) => compose(
+            isNotNil,
+            prop(action.type),
+            defaultTo({}),
+            prop(__, machine),
+            prop(name)
+        )(currentState)),
+        toPairs
+    )(machines)
+}

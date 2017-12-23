@@ -1,4 +1,4 @@
-import {and, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
+import {and, assocPath, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
 
 import spected from 'spected'
 import {
@@ -7,7 +7,6 @@ import {
     createPayloadValidator,
     invokeIfFn,
     leftValIfRightIsTrue,
-    mapPath,
     createMachines,
     createExtender,
     getDefaultStateForMachines,
@@ -15,7 +14,7 @@ import {
     getNextStateForMachine,
     pruneInvalidFields,
     pruneValidatedFields,
-    currentStateHasType,
+    isActionTypeInCurrentState,
     deriveSelectors
 } from './helpers'
 import {duxDefaults, validateAndSetValues, setProp} from './schema'
@@ -31,7 +30,7 @@ export default class Duck {
             const initial = invokeIfFn(this.options.initialState)(this)
             return isEmpty(this.machines) ? initial : {
                 ...(isPlainObj(initial) ? initial : {}),
-                ...mapPath(this.stateMachinesPropName, getDefaultStateForMachines(this.machines))
+                ...assocPath(this.stateMachinesPropName, getDefaultStateForMachines(this.machines), {})
             }
         })
         setProp.call(this, 'selectors', () => deriveSelectors(invokeIfFn(this.options.selectors)(this)))
@@ -59,17 +58,14 @@ export default class Duck {
             } else if (hasNestedProp(stateMachinesPropName, state)) {
                 return state
             }
-            return {
-                ...state,
-                ...mapPath(stateMachinesPropName, initialState)
-            }
+            return {...state, ...assocPath(stateMachinesPropName, initialState, {})}
         }
 
-        if (strictTransitions && !currentStateHasType(getState(), action, this)) {
+        if (strictTransitions && !isActionTypeInCurrentState(getState(), action, this)) {
             return getState()
         }
 
-        const states = mapPath(stateMachinesPropName, this.getNextState(getState(), action, this))
+        const states = assocPath(stateMachinesPropName, this.getNextState(getState(), action), {})
 
         return {...reducer({...getState(), ...states}, action, this), ...states}
     }
