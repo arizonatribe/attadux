@@ -44,6 +44,12 @@ import {
 export const invokeIfFn = (fn) => (is(Function, fn) ? fn : always(fn))
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
 
+export const createRow = (...ducks) =>
+    compose(
+        reduce((row, duck) => ({...row, [duck.store]: duck}), {}),
+        filter(has('store'))
+    )(ducks)
+
 export const pruneInvalidFields = curry((original, validations) =>
     compose(
         reduce((prunedObj, [key, val]) => {
