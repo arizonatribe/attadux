@@ -1,6 +1,7 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import {getCurrentState} from '../src/helpers'
+import {zipObj} from 'ramda'
+import {getCurrentState, createMachines} from '../src/helpers'
 
 test('getCurrentState', (t) => {
     const initialState = {
@@ -9,6 +10,7 @@ test('getCurrentState', (t) => {
             termsOfService: 'initial'
         }
     }
+    const types = ['LOGIN_SUCCESSFUL', 'LOGOUT_SUCCESSFUL', 'AGREE_TO_TERMS', 'REJECTED_TERMS']
     const machines = {
         auth: {
             initial: {
@@ -30,6 +32,25 @@ test('getCurrentState', (t) => {
             rejected: {}
         }
     }
+
+    test('...fails to createMachines when inputs aren\'t action types', (nt) => {
+        nt.deepEqual(
+            createMachines(machines), {
+                auth: {initial: {}, loggedIn: {}, loggedOut: {}},
+                termsOfService: {initial: {}, agreed: {}, rejected: {}}
+            }, 'machines are empty if input types aren\'t registered'
+        )
+        nt.end()
+    })
+
+    test('...succeeds in createMachines attempt when inputs are also action types', (nt) => {
+        nt.deepEqual(
+            createMachines(machines, {types: zipObj(types, types)}),
+            machines,
+            'machines contain all the registered action types as inputs'
+        )
+        nt.end()
+    })
 
     test('...fails gracefully', (nt) => {
         nt.deepEqual(getCurrentState(), {}, 'always returns an object')

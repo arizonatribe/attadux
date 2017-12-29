@@ -1,31 +1,15 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import {is, length} from 'ramda'
 import Duck from '../src/Duck'
 import {isStringieThingie} from '../src/is'
+import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
 
 test('validators:', (t) => {
-    const isString = is(String)
-    const isNumber = is(Number)
-    const isOldEnough = val => isNumber(val) && val > 12
-    const isYoungEnough = val => isNumber(val) && val < 112
-    const isValidEmail = s => /[^\\.\\s@:][^\\s@:]*(?!\\.)@[^\\.\\s@]+(?:\\.[^\\.\\s@]+)*/.test(s)
-    const isLongerThan = len => isNumber(len) && len > 0 && (str => isString(str) && length(str) > len)
-    const isShorterThan = len => isNumber(len) && len > 0 && (str => isString(str) && length(str) < len)
-
     const namespace = 'attadux'
     const store = 'auth'
     const initialState = {
         email: '',
         user: {}
-    }
-    const reducer = (state, action, {types}) => {
-        switch (action.type) {
-            case types.CREATE_USER:
-                return {...state, user: action.user}
-            default:
-                return state
-        }
     }
     const validators = {
         auth: {
@@ -93,79 +77,6 @@ test('validators:', (t) => {
         nt.end()
     })
 
-    test('...which can also be applied to a dispatched action', (nt) => {
-        const duck = new Duck({
-            namespace,
-            store,
-            reducer,
-            initialState,
-            types: ['CREATE_USER'],
-            validators: {
-                [`${namespace}/${store}/CREATE_USER`]: {user: validators.auth.user}
-            }
-        })
-        nt.deepEqual(
-            duck.reducer(initialState, {
-                type: `${namespace}/${store}/CREATE_USER`,
-                user: {age: 11, name: {first: 'H', last: 'Potter'}}
-            }),
-            {...initialState, user: {name: {last: 'Potter'}}},
-            'verify that invalid fields were pruned from the action payload, prior to the reducer accessing it'
-        )
-        nt.end()
-    })
-
-    test('...which can also be applied as a post-reducer, on that entire section of the store', (nt) => {
-        const duck = new Duck({
-            namespace,
-            store,
-            reducer,
-            initialState,
-            types: ['CREATE_USER'],
-            validators: {reducer: validators.auth}
-        })
-        nt.deepEqual(
-            duck.reducer(initialState, {
-                type: `${namespace}/${store}/CREATE_USER`,
-                user: {age: 11, name: {first: 'H', last: 'Potter'}}
-            }), {
-                email: '',
-                user: {name: {last: 'Potter'}},
-                validationErrors: {
-                    email: ['Email is required', 'Invalid format for email address'],
-                    user: {
-                        age: ['You are too young; please go get your parents'],
-                        name: {first: ['Come on now; be serious. What\'s your REAL name?']}
-                    }
-                }
-            },
-            'verify that invalid fields not updated in the store by the reducer AND that validationErrors were populated'
-        )
-        nt.end()
-    })
-    test('...which can also be configured to cancel the reducer if validations fail', (nt) => {
-        const duck = new Duck({
-            namespace,
-            store,
-            reducer,
-            initialState,
-            cancelReducerOnValidationError: true,
-            types: ['CREATE_USER'],
-            validators: {
-                [`${namespace}/${store}/CREATE_USER`]: {user: validators.auth.user}
-            }
-        })
-        nt.deepEqual(
-            duck.reducer(initialState, {
-                type: `${namespace}/${store}/CREATE_USER`,
-                user: {age: 11, name: {first: 'H', last: 'Potter'}}
-            }),
-            initialState,
-            'verify that reducer did not modify state, because the dispatched action\'s payload was invalid'
-        )
-        nt.end()
-    })
-
     test('...which can also provide manual checking of action payload to the reducer', (nt) => {
         const duck = new Duck({
             namespace,
@@ -200,11 +111,3 @@ test('validators:', (t) => {
 
     t.end()
 })
-
-// run validators =>
-
-// run reducer and intercept modified state =>
-
-// use validation result to build version of prior state with only fields which failed validation (value should be original) =>
-
-// deep merge the modified state with the version of prior state where validations failed

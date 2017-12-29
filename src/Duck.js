@@ -1,19 +1,14 @@
 import {and, assocPath, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
-
 import spected from 'spected'
 import {
-    anyValidationFailures,
     concatOrReplace,
     createPayloadValidator,
     invokeIfFn,
-    leftValIfRightIsTrue,
     createMachines,
     createExtender,
     getDefaultStateForMachines,
     getNextState,
     getNextStateForMachine,
-    pruneInvalidFields,
-    pruneValidatedFields,
     isActionTypeInCurrentState,
     deriveSelectors
 } from './helpers'
@@ -67,51 +62,14 @@ export default class Duck {
 
         const states = assocPath(stateMachinesPropName, this.getNextState(getState(), action), {})
 
-        return {...reducer({...getState(), ...states}, action, this), ...states}
+        return {
+            ...reducer({...getState(), ...states}, action, this),
+            ...states
+        }
     }
 
     reducer(state, action = {}) {
-        const {options: {reducer}, validators, cancelReducerOnValidationError} = this
-        const getState = () => (isNil(state) ? this.initialState : state)
-
-        if (isEmpty(validators)) {
-            return reducer(getState(), action, this)
-        }
-
-        const isActionValidator = has(action.type, validators)
-        const isPostReducerValidator = has('reducer', validators)
-
-        if (isActionValidator || isPostReducerValidator) {
-            const validate = (validator, data) => {
-                const validationResult = validator(data)
-                if (!anyValidationFailures) {
-                    return data
-                } else if (cancelReducerOnValidationError === true) {
-                    return getState()
-                } else if (isActionValidator) {
-                    return reducer(getState(), {
-                        ...pruneInvalidFields(action, validationResult),
-                        validationErrors: pruneValidatedFields(validationResult)
-                    }, this)
-                }
-
-                return {
-                    ...getState(),
-                    ...pruneInvalidFields(
-                        mergeDeepWith(leftValIfRightIsTrue, data, validationResult), validationResult
-                    ),
-                    validationErrors: pruneValidatedFields(validationResult)
-                }
-            }
-
-            if (isActionValidator) {
-                return validate(validators[action.type], action)
-            } else if (isPostReducerValidator) {
-                return validate(validators.reducer, reducer(getState(), action, this))
-            }
-        }
-
-        return reducer(getState(), action, this)
+        return this.options.reducer(isNil(state) ? this.initialState : state, action, this)
     }
 
     extend(opts) {
