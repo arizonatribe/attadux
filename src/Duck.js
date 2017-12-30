@@ -1,35 +1,36 @@
-import {and, assocPath, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
 import spected from 'spected'
+import {and, assocPath, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
+import {coerceToFn} from './helpers/coerce'
+import {isPlainObj, hasNestedProp} from './helpers/is'
 import {
-    concatOrReplace,
-    createPayloadValidator,
-    invokeIfFn,
     createMachines,
-    createExtender,
     getDefaultStateForMachines,
     getNextState,
     getNextStateForMachine,
-    isActionTypeInCurrentState,
-    deriveSelectors
-} from './helpers'
+    isActionTypeInCurrentState
+} from './helpers/machines'
+import {createExtender} from './helpers/duck'
+import {deriveSelectors} from './helpers/selectors'
+import {createPayloadValidator} from './helpers/validations'
 import {duxDefaults, validateAndSetValues, setProp} from './schema'
-import {hasNestedProp, isPlainObj} from './is'
+import {concatOrReplace} from './helpers/types'
+
 
 export default class Duck {
     constructor(opts = {}) {
         Object.assign(this, validateAndSetValues({...duxDefaults, ...opts}))
 
-        setProp.call(this, 'validators', () => map(spected, invokeIfFn(this.options.validators)(this)))
-        setProp.call(this, 'machines', () => createMachines(invokeIfFn(this.options.machines)(this), this))
+        setProp.call(this, 'validators', () => map(spected, coerceToFn(this.options.validators)(this)))
+        setProp.call(this, 'machines', () => createMachines(coerceToFn(this.options.machines)(this), this))
         setProp.call(this, 'initialState', () => {
-            const initial = invokeIfFn(this.options.initialState)(this)
+            const initial = coerceToFn(this.options.initialState)(this)
             return isEmpty(this.machines) ? initial : {
                 ...(isPlainObj(initial) ? initial : {}),
                 ...assocPath(this.stateMachinesPropName, getDefaultStateForMachines(this.machines), {})
             }
         })
-        setProp.call(this, 'selectors', () => deriveSelectors(invokeIfFn(this.options.selectors)(this)))
-        setProp.call(this, 'creators', () => invokeIfFn(this.options.creators)(this))
+        setProp.call(this, 'selectors', () => deriveSelectors(coerceToFn(this.options.selectors)(this)))
+        setProp.call(this, 'creators', () => coerceToFn(this.options.creators)(this))
         setProp.call(this, 'reducer', () => (
             and(!isEmpty(this.machines), or(this.strictTransitions, this.useTransitions)) ?
             this.transitions.bind(this) : this.reducer.bind(this)
@@ -74,7 +75,7 @@ export default class Duck {
 
     extend(opts) {
         const parentOptions = this.options
-        const extendedOptions = {...duxDefaults, ...parentOptions, ...invokeIfFn(opts)(this)}
+        const extendedOptions = {...duxDefaults, ...parentOptions, ...coerceToFn(opts)(this)}
         const extendProp = createExtender(this, extendedOptions)
         const extendFromParentOptions = createExtender(parentOptions, extendedOptions)
 

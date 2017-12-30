@@ -7,28 +7,13 @@ import {
     defaultTo,
     either,
     equals,
-    has,
-    identity,
-    ifElse,
     is,
     isEmpty,
     isNil,
     not,
     path,
-    test,
-    toString
+    test
 } from 'ramda'
-
-/**
- * Converts a value of any type to [its string equivalent](http://ramdajs.com/docs/#toString),
- * but passes through a String value [untouched](http://ramdajs.com/docs/#identity)
- *
- * @func
- * @sig * -> String
- * @param {*}
- * @returns {String}
- */
-export const coerceToString = ifElse(is(String), identity, toString)
 
 /**
  * Checks to see if a prop name is an alphanumeric string (plus some symbols
@@ -90,17 +75,6 @@ export const isNotNil = complement(isNil)
 export const isNotEmpty = complement(isEmpty)
 
 /**
- * Checks to see if a provided object has a given prop (path)
- *
- * @func
- * @sig [String] -> {k: v} -> Boolean
- * @param {String[]} propPath An array of string values representing the nested path to a prop
- * @param {Object} obj An object on which a given prop may exist
- * @returns {Boolean} whether or not the provided prop path exists on the provided object
- */
-export const hasNestedProp = curry((propPath, obj) => compose(isNotNil, path(propPath))(obj))
-
-/**
  * Checks to see whether or not a given String is non-blank (one or more chars)
  *
  * @func
@@ -132,29 +106,15 @@ export const isStringieThingie = allPass([
  * @param {*} val A value which may or may not be "primitive-ish"
  * @returns {Boolean} whether or not a given value is "primitive-ish"
  */
-export const isPrimitiveish = anyPass([
-    is(Boolean),
-    is(Number),
-    is(String),
-    is(RegExp),
-    is(Date)
-])
+export const isPrimitiveish = anyPass([is(Boolean), is(Number), is(String), is(RegExp), is(Date)])
 
 /**
- * Checks to see whether a given machine allows for a given transition, provided its current state
+ * Checks to see if a provided object has a given prop (path)
  *
  * @func
- * @sig String -> String -> {k: v} -> Boolean
- * @param {String} transitionName A string value representing a potential state transition
- * @param {String} currentState A string value representing the current state
- * @param {Object} machine A state machine which contains the possible states and their associated transitions
- * @returns {Boolean} whether or not the transition is possible from the current state
+ * @sig [String] -> {k: v} -> Boolean
+ * @param {String[]} propPath An array of string values representing the nested path to a prop
+ * @param {Object} obj An object on which a given prop may exist
+ * @returns {Boolean} whether or not the provided prop path exists on the provided object
  */
-export const isTransitionPossible = curry((transitionName, currentState, machine) =>
-    compose(
-        has(coerceToString(transitionName)),
-        defaultTo({}),
-        path([coerceToString(currentState)]),
-        defaultTo({})
-    )(machine)
-)
+export const hasNestedProp = curry((propPath, obj) => compose(isNotNil, path(propPath))(obj))

@@ -27,15 +27,11 @@ import {
     values
 } from 'ramda'
 import spected from 'spected'
-import {isNotEmpty, isDux, isPrimitiveish, isPlainObj, isStringieThingie} from './is'
-import {
-    anyValidationFailures,
-    createConstants,
-    createTypes,
-    getStateMachinesPropPath,
-    pruneInvalidFields,
-    pruneValidatedFields
-} from './helpers'
+
+import {getStateMachinesPropPath} from './helpers/machines'
+import {isNotEmpty, isDux, isPrimitiveish, isPlainObj, isStringieThingie} from './helpers/is'
+import {createConstants, createTypes} from './helpers/types'
+import {anyValidationFailures, pruneInvalidFields, pruneValidatedFields} from './helpers/validations'
 
 export const duxDefaults = {
     cancelReducerOnValidationError: false,

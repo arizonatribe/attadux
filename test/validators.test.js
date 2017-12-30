@@ -1,7 +1,7 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
 import Duck from '../src/Duck'
-import {isStringieThingie} from '../src/is'
+import {isStringieThingie} from '../src/helpers/is'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
 
 test('validators:', (t) => {

@@ -1,48 +1,8 @@
 /* eslint "max-len": "off" */
-import {
-    __,
-    always,
-    anyPass,
-    assocPath,
-    compose,
-    complement,
-    defaultTo,
-    either,
-    filter,
-    head,
-    ifElse,
-    isEmpty,
-    isNil,
-    keys,
-    none,
-    nth,
-    prop,
-    split,
-    T,
-    values
-} from 'ramda'
-import {isActionTypeInCurrentState} from './helpers'
-import {isPlainObj, isDux, isNotBlankString} from './is'
+import {always, assocPath, T} from 'ramda'
+import {createDuckLookup, noDucks} from './helpers/duck'
+import {isActionTypeInCurrentState, noMachines} from './helpers/machines'
 import {validateMiddlwareDucks} from './schema'
-
-const noMachines = compose(anyPass([isNil, isEmpty]))
-const noDucks = anyPass([
-    complement(isPlainObj),
-    compose(isEmpty, keys),
-    compose(none(isDux), values)
-])
-const createDuckLookup = dux =>
-    compose(
-        defaultTo({}),
-        ifElse(
-            isNotBlankString,
-            prop(__, filter(isDux, dux)),
-            always({})
-        ),
-        either(nth(1), head),
-        split('/'),
-        prop('type')
-    )
 
 export default (dux) => {
     if (noDucks(dux)) {

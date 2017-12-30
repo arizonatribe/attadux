@@ -1,7 +1,7 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
 import {zipObj} from 'ramda'
-import {getCurrentState, createMachines} from '../src/helpers'
+import {getCurrentState, createMachines} from '../src/helpers/machines'
 
 test('getCurrentState', (t) => {
     const initialState = {
