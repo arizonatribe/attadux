@@ -4,6 +4,18 @@ import {createDuckLookup, noDucks} from './helpers/duck'
 import {isActionTypeInCurrentState, noMachines} from './helpers/machines'
 import {validateMiddlwareDucks} from './schema'
 
+// TODO : Implement validationLevel as a per-duck prop and use it to validate as:
+//
+//   STRICT: isActionTypeInCurrentState
+//   CANCEL: !isPayloadValid
+//   PRUNE: pruneInvalidFields
+//   LOG: getValidationErrors
+//
+// validationLevel: [STRICT, CANCEL (default), PRUNE, LOG]
+//
+// TODO: Remove the strictTransitions implementation and roll it up into the
+// STRICT setting for validationLevel
+
 export default (dux) => {
     if (noDucks(dux)) {
         throw new Error('No ducks have been provided! To create the Attadux middleware please provide an Object containing one or more ducks')
@@ -18,6 +30,8 @@ export default (dux) => {
         const {
             machines,
             isPayloadValid = T,
+            getValidationErrors = always(null),
+            pruneInvalidFields = always(action),
             getNextState = always({}),
             strictTransitions = false,
             stateMachinesPropName = 'states'

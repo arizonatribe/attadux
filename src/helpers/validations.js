@@ -1,11 +1,14 @@
 import {
     __,
+    always,
     any,
     both,
     compose,
     curry,
     defaultTo,
     either,
+    identity,
+    ifElse,
     is,
     isEmpty,
     not,
@@ -70,6 +73,59 @@ export const pruneValidatedFields = compose(
 )
 
 /**
+ * Simple retrieval function that looks for an action payload validator matching
+ * a given action.
+ *
+ * @func
+ * @sig {k: v} -> {k: v} -> ({k: v} -> Boolean)
+ * @returns {Function} A validator matching a dispatched action (or a Function
+ * always returning True if none exists)
+ */
+export const getValidatorForAction = validators => compose(
+    defaultTo(T),
+    prop(__, validators),
+    prop('type')
+)
+
+/**
+ * Creates a function that will receive a dispatched action and apply a validator function that
+ * matches its action type (if one exists) and prune away any fields that failed validation.
+ * The set of validator functions from which to match the action type is the only dependency.
+ *
+ * @func
+ * @sig {k: v} -> {k: v} -> {k: v}
+ * @param {Object} validators An object of curried [spected](https://github.com/25th-floor/spected) validator functions
+ * @returns {Object} The original action paylod, minus any invalid fields
+ */
+export const createPayloadPruner = (validators = {}) =>
+    (action = {}) =>
+        compose(
+            ifElse(isEmpty, always(null), identity),
+            pruneInvalidFields(action),
+            validate => validate(action),
+            getValidatorForAction(validators)
+        )(action)
+
+/**
+ * Creates a function that will receive a dispatched action and apply a validator function that
+ * matches its action type (if one exists).
+ * The set of validator functions from which to match the action type is the only dependency.
+ *
+ * @func
+ * @sig {k: v} -> {k: v} -> {k: v}
+ * @param {Object} validators An object of curried [spected](https://github.com/25th-floor/spected) validator functions
+ * @returns {Object|null} An Object of validation errors, if any, otherwise returns null
+ */
+export const createPayloadValidationsLogger = (validators = {}) =>
+    (action = {}) =>
+        compose(
+            ifElse(isEmpty, always(null), identity),
+            pruneValidatedFields,
+            validate => validate(action),
+            getValidatorForAction(validators)
+        )(action)
+
+/**
  * Inspects an Object (can even be nested) of validation results, for props which failed validation.
  * Because the [spected](https://github.com/25th-floor/spected) tool follows a common validations format
  * where failed validations are Arrays of validation errors (strings) and validated props are simply marked `true`,
@@ -88,11 +144,11 @@ export const anyValidationFailures = (validations = {}) =>
 
 /**
  * Creates a function that will receive a dispatched action and apply a validator function that
- * matches its action type (if one exists). The set of validator functions from
- * which to match the action type is the only dependency.
+ * matches its action type (if one exists) and do a basic pass/fail check.
+ * The set of validator functions from which to match the action type is the only dependency.
  *
  * @func
- * @sig {k: v} -> (a -> Boolean)
+ * @sig {k: v} -> {k: v} -> Boolean
  * @param {Object} validators An object of curried [spected](https://github.com/25th-floor/spected) validator functions
  * @returns {Function} A validator function to be applied against a dispatched action
  */
@@ -102,7 +158,5 @@ export const createPayloadValidator = (validators = {}) =>
             not,
             anyValidationFailures,
             validate => validate(action),
-            defaultTo(T),
-            prop(__, validators),
-            prop('type')
+            getValidatorForAction(validators)
         )(action)

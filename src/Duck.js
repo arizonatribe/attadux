@@ -11,7 +11,7 @@ import {
 } from './helpers/machines'
 import {createExtender} from './helpers/duck'
 import {deriveSelectors} from './helpers/selectors'
-import {createPayloadValidator} from './helpers/validations'
+import {createPayloadValidator, createPayloadValidationsLogger, createPayloadPruner} from './helpers/validations'
 import {duxDefaults, validateAndSetValues, setProp} from './schema'
 import {concatOrReplace} from './helpers/types'
 
@@ -38,6 +38,8 @@ export default class Duck {
 
         if (has('validators', this)) {
             this.isPayloadValid = createPayloadValidator(this.validators)
+            this.getValidationErrors = createPayloadValidationsLogger(this.validators)
+            this.pruneInvalidFields = createPayloadPruner(this.validators)
         }
         if (has('machines', this)) {
             this.getNextState = getNextState.bind(this)
