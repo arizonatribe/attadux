@@ -1,8 +1,32 @@
-import {allPass, always, compose, filter, ifElse, is, map, not, reduce, toPairs, zipObj} from 'ramda'
+import {
+    allPass,
+    always,
+    compose,
+    filter,
+    ifElse,
+    is,
+    map,
+    not,
+    prop,
+    reduce,
+    toPairs,
+    values,
+    zipObj
+} from 'ramda'
 
 import {isNotNil, isPrimitiveish} from './is'
 
 import {listOfPairsToOneObject, coerceToArray} from './coerce'
+
+/**
+ * Retrieves all a duck's namespaced types
+ *
+ * @func
+ * @sig {k: v} -> [String]
+ * @param {Object} duck An object containing an object of action types, whose values are namespaced
+ * @returns {String[]} A list of all the namespaced types for a given duck
+ */
+export const getTypes = compose(values, prop('types'))
 
 /**
  * Merges together either two lists or appends a non-list type into another list

@@ -1,19 +1,13 @@
 import spected from 'spected'
-import {and, assocPath, has, isEmpty, isNil, map, mergeDeepWith, or} from 'ramda'
+import {assocPath, has, isEmpty, isNil, map, mergeDeepWith} from 'ramda'
+import {duxDefaults, validateAndSetValues, setProp} from './schema'
+import {isPlainObj} from './helpers/is'
 import {coerceToFn} from './helpers/coerce'
-import {isPlainObj, hasNestedProp} from './helpers/is'
-import {
-    createMachines,
-    getDefaultStateForMachines,
-    getNextState,
-    getNextStateForMachine,
-    isActionTypeInCurrentState
-} from './helpers/machines'
 import {createExtender} from './helpers/duck'
+import {concatOrReplace} from './helpers/types'
 import {deriveSelectors} from './helpers/selectors'
 import {createPayloadValidator, createPayloadValidationsLogger, createPayloadPruner} from './helpers/validations'
-import {duxDefaults, validateAndSetValues, setProp} from './schema'
-import {concatOrReplace} from './helpers/types'
+import {createMachines, getDefaultStateForMachines, getNextState, getNextStateForMachine} from './helpers/machines'
 
 
 export default class Duck {
@@ -31,10 +25,7 @@ export default class Duck {
         })
         setProp.call(this, 'selectors', () => deriveSelectors(coerceToFn(this.options.selectors)(this)))
         setProp.call(this, 'creators', () => coerceToFn(this.options.creators)(this))
-        setProp.call(this, 'reducer', () => (
-            and(!isEmpty(this.machines), or(this.strictTransitions, this.useTransitions)) ?
-            this.transitions.bind(this) : this.reducer.bind(this)
-        ))
+        setProp.call(this, 'reducer', () => this.reducer.bind(this))
 
         if (has('validators', this)) {
             this.isPayloadValid = createPayloadValidator(this.validators)
@@ -44,30 +35,6 @@ export default class Duck {
         if (has('machines', this)) {
             this.getNextState = getNextState.bind(this)
             this.getNextStateForMachine = getNextStateForMachine.bind(this)
-        }
-    }
-
-    transitions(state, action = {}) {
-        const {initialState, stateMachinesPropName, strictTransitions, options: {reducer}} = this
-
-        const getState = () => {
-            if (isNil(state)) {
-                return initialState
-            } else if (hasNestedProp(stateMachinesPropName, state)) {
-                return state
-            }
-            return {...state, ...assocPath(stateMachinesPropName, initialState, {})}
-        }
-
-        if (strictTransitions && !isActionTypeInCurrentState(getState(), action, this)) {
-            return getState()
-        }
-
-        const states = assocPath(stateMachinesPropName, this.getNextState(getState(), action), {})
-
-        return {
-            ...reducer({...getState(), ...states}, action, this),
-            ...states
         }
     }
 

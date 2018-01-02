@@ -1,30 +1,18 @@
-/* eslint "max-len": "off" */
-import {always, assocPath, T} from 'ramda'
-import {createDuckLookup, noDucks} from './helpers/duck'
+import {__, always, assocPath, call, compose, defaultTo, F, identity, ifElse, pickBy, prop, T} from 'ramda'
+import {isNoNil} from './helpers/is'
+import {createDuckLookup} from './helpers/duck'
 import {isActionTypeInCurrentState, noMachines} from './helpers/machines'
-import {validateMiddlwareDucks} from './schema'
+import {getRowValidationErrors} from './schema'
+import {VALIDATION_LEVELS} from './helpers/validations'
 
-// TODO : Implement validationLevel as a per-duck prop and use it to validate as:
-//
-//   STRICT: isActionTypeInCurrentState
-//   CANCEL: !isPayloadValid
-//   PRUNE: pruneInvalidFields
-//   LOG: getValidationErrors
-//
-// validationLevel: [STRICT, CANCEL (default), PRUNE, LOG]
-//
-// TODO: Remove the strictTransitions implementation and roll it up into the
-// STRICT setting for validationLevel
+export default (row) => {
+    const validationErrors = getRowValidationErrors(row)
 
-export default (dux) => {
-    if (noDucks(dux)) {
-        throw new Error('No ducks have been provided! To create the Attadux middleware please provide an Object containing one or more ducks')
-    }
-    if (!validateMiddlwareDucks(dux)) {
-        throw new Error('The provided ducks are invalid. You must provide each Duck with state machines whose input values are among the Duck\'s action types and whose transitions are also state names.')
+    if (validationErrors) {
+        throw new Error(validationErrors)
     }
 
-    const getDuckMatchingAction = createDuckLookup(dux)
+    const getDuckMatchingAction = createDuckLookup(row)
 
     return ({getState}) => next => action => {
         const {
@@ -33,25 +21,49 @@ export default (dux) => {
             getValidationErrors = always(null),
             pruneInvalidFields = always(action),
             getNextState = always({}),
-            strictTransitions = false,
-            stateMachinesPropName = 'states'
+            stateMachinesPropName = 'states',
+            validationLevel = always(VALIDATION_LEVELS.CANCEL)
         } = getDuckMatchingAction(action)
-
-        if (!isPayloadValid(action) || (
-            strictTransitions &&
-            !isActionTypeInCurrentState(getState(), action, {machines, stateMachinesPropName})
-        )) {
-            return false
-        }
 
         if (noMachines(machines)) {
             return next(action)
         }
 
-        return {
-            ...next(action),
+        const prevState = getState()
+
+        const validatorsByLevel = {
+            /* Simple cancel if payload returns any invalid fields */
+            [VALIDATION_LEVELS.CANCEL]: ifElse(isPayloadValid, identity, F),
+            /* Always pass the action through, but add a validationErrors prop if there are any */
+            [VALIDATION_LEVELS.LOG]: a => always({
+                ...action,
+                ...pickBy(isNoNil, {validationErrors: getValidationErrors(a)})
+            }),
+            /* Remove all invalid fields from the action */
+            [VALIDATION_LEVELS.PRUNE]: pruneInvalidFields,
+            /* Only pass actions that are registered as inputs to the state machine for the current state */
+            [VALIDATION_LEVELS.STRICT]: ifElse(
+                compose(
+                    isActionTypeInCurrentState(prevState, __, {machines, stateMachinesPropName})
+                ),
+                // useWith(
+                //     isActionTypeInCurrentState,
+                //     [always(prevState), identity, always({machines, stateMachinesPropName})]
+                // ),
+                identity,
+                F
+            )
+        }
+
+        const validatedAction = call(
+            compose(defaultTo(identity), prop(validationLevel))(validatorsByLevel),
+            action
+        )
+
+        return validatedAction && {
+            ...next(validatedAction),
             ...assocPath(
-                stateMachinesPropName, getNextState(getState(), action), {}
+                stateMachinesPropName, getNextState(prevState, validatedAction), {}
             )
         }
     }

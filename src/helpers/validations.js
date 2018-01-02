@@ -4,6 +4,7 @@ import {
     any,
     both,
     compose,
+    contains,
     curry,
     defaultTo,
     either,
@@ -18,10 +19,44 @@ import {
     reject,
     T,
     toPairsIn,
+    toUpper,
+    trim,
     valuesIn
 } from 'ramda'
 
 import {isPlainObj} from './is'
+import {createConstants} from './types'
+
+export const {VALIDATION_LEVELS} = createConstants({
+    VALIDATION_LEVELS: ['STRICT', 'CANCEL', 'PRUNE', 'LOG']
+})
+
+/**
+ * Checks to see if a given value is one of the valid options for
+ * Validation Level, which are: STRICT, CANCEL, PRUNE, LOG
+ *
+ * @func
+ * @sig String -> Boolean
+ * @param {String} level One of the four valid options: STRICT, CANCEL, PRUNE, LOG
+ * @returns {Boolean} Whether or not a level is valid for middleware validations
+ */
+export const isValidationLevel = contains(__, VALIDATION_LEVELS)
+
+/**
+ * Sets a validation level, one of: STRICT, CANCEL, PRUNE, LOG.
+ * The default - if no valid level is passed in - is CANCEL.
+ *
+ * @func
+ * @sig String -> String
+ * @param {String|*} level A validation level for the middleware
+ * @returns {String} One of [STRICT, CANCEL, PRUNE, LOG]
+ */
+export const makeValidationLevel = compose(
+    ifElse(isValidationLevel, identity, always('CANCEL')),
+    toUpper,
+    trim,
+    toString
+)
 
 /**
  * A curried function that examines the result of a [spected](https://github.com/25th-floor/spected) validator on a given

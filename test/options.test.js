@@ -5,10 +5,9 @@ import {duxDefaults} from '../src/schema'
 test('default values for all options have not changed', (t) => {
     t.deepEqual(
         {
-            cancelReducerOnValidationError: false,
-            strictTransitions: false,
             useTransitions: true,
             stateMachinesPropName: 'states',
+            validationLevel: 'CANCEL',
             consts: {},
             creators: {},
             machines: {},

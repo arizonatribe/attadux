@@ -2,10 +2,107 @@
 import test from 'tape'
 import spected from 'spected'
 import {zipObj} from 'ramda'
-import {getCurrentState, createMachines} from '../src/helpers/machines'
+import {
+    getCurrentState,
+    createMachines,
+    getTransitionsForMachine,
+    getStateInputsForMachine,
+    getStateInputsForAllMachines
+} from '../src/helpers/machines'
 import {createPayloadValidationsLogger, createPayloadPruner} from '../src/helpers/validations'
 import {isStringieThingie} from '../src/helpers/is'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
+
+test('getTransitionsForMachine', (t) => {
+    const machine = {
+        init: {
+            ACTION_TYPE2: 'two',
+            ACTION_TYPE1: 'one'
+        },
+        one: {
+            ACTION_TYPE2: 'two'
+        },
+        two: {
+            ACTION_TYPE1: 'one'
+        }
+    }
+
+    t.deepEqual(
+        getTransitionsForMachine(machine),
+        ['two', 'one'],
+        'verify the transitions are extracted from each the nested object'
+    )
+    t.deepEqual(
+        getTransitionsForMachine({...machine, three: {}}),
+        ['two', 'one'],
+        'verify it isn\'t just pulling the keys from the machine'
+    )
+    t.end()
+})
+
+test('getStateInputsForMachine', (t) => {
+    const machine = {
+        init: {
+            ACTION_TYPE2: 'two',
+            ACTION_TYPE1: 'one'
+        },
+        one: {
+            ACTION_TYPE2: 'two'
+        },
+        two: {
+            ACTION_TYPE1: 'one'
+        }
+    }
+
+    t.deepEqual(
+        getStateInputsForMachine(machine),
+        ['ACTION_TYPE2', 'ACTION_TYPE1'],
+        'verify the inputs are extracted from each of the nested objects'
+    )
+    t.end()
+})
+
+test('getStateInputsForAllMachines', (t) => {
+    const mockDuck = {
+        machines: {
+            auth: {
+                init: {
+                    ACTION_TYPE2: 'two',
+                    ACTION_TYPE1: 'one'
+                },
+                one: {
+                    ACTION_TYPE2: 'two'
+                },
+                two: {
+                    ACTION_TYPE1: 'one'
+                }
+            },
+            notAuth: {
+                init: {
+                    ACTION_TYPE2: 'notTwo',
+                    ACTION_TYPE1: 'notOne',
+                    FREEZE: 'disabled'
+                },
+                notOne: {
+                    ACTION_TYPE2: 'notTwo',
+                    FREEZE: 'disabled'
+                },
+                notTwo: {
+                    ACTION_TYPE1: 'notOne',
+                    FREEZE: 'disabled'
+                },
+                disabled: {}
+            }
+        }
+    }
+
+    t.deepEqual(
+        getStateInputsForAllMachines(mockDuck),
+        ['ACTION_TYPE2', 'ACTION_TYPE1', 'FREEZE'],
+        'verify the inputs are extracted from each of the nested objects on each of the duck\'s machines'
+    )
+    t.end()
+})
 
 test('createPayloadValidationsLogger', (t) => {
     const validators = {
