@@ -45,17 +45,40 @@ Also, if you wish to track machine states on a prop other than `states` (at the 
 The middleware currently has one purpose, to validate any of the dispatched redux actions. You can, of course, use validators for many things - like user form input - but if you give a validator the same name as a redux action type, then you can use it to validate a redux action. All you need to do (aside from naming your validator appropriately) is apply the attadux middleware when you configure your redux store.
 
 ```javascript
+//store.js
+
 import {createStore, applyMiddleware} from 'redux'
-import {validatorMiddleware} from 'attadux'
+import {createValidatorMiddleware} from 'attadux'
 
 import initialState from './initialState'
 import reducers from './reducers'
+import allDucks from './ducks'
 
 export default createStore(
     reducers,
     initialState,
-    applyMiddleware(validatorMiddleware)
+    applyMiddleware(createValidatorMiddleware(allDucks))
 )
+```
+
+And to create the "row" of ducks (very similar to `combineReducers()` for your Redux reducers:
+
+```javascript
+// ducks.js
+
+import {createRow} from 'attadux'
+import authDuck from './components/auth/duck'
+import products from './components/products/duck'
+import customers from './components/customers/duck'
+import ordersDuck from './components/orders/duck'
+
+export default createRow(authDuck, products, customers, orders)
+```
+
+__Note__: It doesn't matter what alias you give your duck when importing, because `createRow()` will use the `.store` prop from each duck (which is a String) to format the row as:
+
+```
+{auth, products, customers, orders}
 ```
 
 ## State Machines & Validators

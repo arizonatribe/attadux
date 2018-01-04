@@ -1,8 +1,8 @@
 import {__, always, assoc, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, prop, T} from 'ramda'
-import {createDuckLookup} from './helpers/duck'
-import {isActionTypeInCurrentState, noMachines} from './helpers/machines'
-import {getRowValidationErrors} from './schema'
-import {VALIDATION_LEVELS} from './helpers/validations'
+import {createDuckLookup} from '../helpers/duck'
+import {isActionTypeInCurrentState, noMachines} from '../machines'
+import {getRowValidationErrors} from '../schema'
+import VALIDATION_LEVELS from './levels'
 
 export default (row) => {
     const validationErrors = getRowValidationErrors(row)

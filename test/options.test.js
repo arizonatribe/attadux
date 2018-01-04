@@ -1,6 +1,6 @@
 import test from 'tape'
 import Duck from '../src/Duck'
-import {duxDefaults} from '../src/schema'
+import {duxDefaults} from '../src/schema/rules'
 
 test('default values for all options have not changed', (t) => {
     t.deepEqual(

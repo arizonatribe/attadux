@@ -2,7 +2,7 @@
 import {always, compose, omit, identity} from 'ramda'
 import test from 'tape'
 import Duck from '../src/Duck'
-import createMiddleware from '../src/middleware'
+import createMiddleware from '../src/validators/middleware'
 import {createRow} from '../src/helpers/duck'
 import {isStringieThingie} from '../src/helpers/is'
 import {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'

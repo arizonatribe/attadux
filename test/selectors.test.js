@@ -1,7 +1,7 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
 import Duck from '../src/Duck'
-import {createSelector, createDuckSelector} from '../src/helpers/selectors'
+import {createSelector, createDuckSelector} from '../src/selectors'
 
 test('lets the selectors compose themselves and reference the duck instance', (t) => {
     const duck = new Duck({

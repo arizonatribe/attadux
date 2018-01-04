@@ -39,9 +39,9 @@ import {
     values
 } from 'ramda'
 
-import {getTypes} from './types'
-import {coerceToString, listOfPairsToOneObject, coerceToArray} from './coerce'
-import {hasNestedProp, isStringieThingie, isValidPropName, isNotBlankString, isNotNil, isPlainObj} from './is'
+import {getTypes} from '../types'
+import {coerceToString, listOfPairsToOneObject, coerceToArray} from '../helpers/coerce'
+import {hasNestedProp, isStringieThingie, isValidPropName, isNotBlankString, isNotNil, isPlainObj} from '../helpers/is'
 
 /**
  * Simple check to see whether a given duck's machines is empty.

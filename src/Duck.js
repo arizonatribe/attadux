@@ -1,13 +1,12 @@
 import spected from 'spected'
 import {assocPath, has, isNil, map, mergeDeepWith} from 'ramda'
-import {duxDefaults, validateAndSetValues, setProp} from './schema'
-import {isPlainObj, isNotEmpty} from './helpers/is'
-import {coerceToFn} from './helpers/coerce'
-import {createExtender} from './helpers/duck'
-import {concatOrReplace} from './helpers/types'
-import {deriveSelectors} from './helpers/selectors'
-import {createPayloadValidator, createPayloadValidationsLogger, createPayloadPruner} from './helpers/validations'
-import {addTransitionsToState, createMachines, getDefaultStateForMachines, getNextState} from './helpers/machines'
+import {validateAndSetValues, setProp} from './schema'
+import {isPlainObj, isNotEmpty, coerceToFn, createExtender} from './helpers'
+import {duxDefaults} from './schema/rules'
+import {deriveSelectors} from './selectors'
+import {concatOrReplace} from './types'
+import {createPayloadValidator, createPayloadValidationsLogger, createPayloadPruner} from './validators'
+import {addTransitionsToState, createMachines, getDefaultStateForMachines, getNextState} from './machines'
 
 
 export default class Duck {

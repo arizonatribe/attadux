@@ -3,6 +3,16 @@ import test from 'tape'
 import Duck from '../src/Duck'
 import {isStringieThingie} from '../src/helpers/is'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
+import VALIDATION_LEVELS from '../src/validators/levels'
+
+test('VALIDATION_LEVELS', (t) => {
+    t.deepEqual(
+        Object.keys(VALIDATION_LEVELS),
+        ['STRICT', 'CANCEL', 'PRUNE', 'LOG'],
+        'verify the strict, cancel, prune and log modes have not been renamed (would be a breaking change to the api)'
+    )
+    t.end()
+})
 
 test('validators:', (t) => {
     const namespace = 'attadux'

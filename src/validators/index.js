@@ -25,13 +25,9 @@ import {
     valuesIn
 } from 'ramda'
 
-import {isPlainObj} from './is'
-import {createConstants} from './types'
-import {coerceToString} from './coerce'
-
-export const {VALIDATION_LEVELS} = createConstants({
-    VALIDATION_LEVELS: ['STRICT', 'CANCEL', 'PRUNE', 'LOG']
-})
+import {isPlainObj} from '../helpers/is'
+import {coerceToString} from '../helpers/coerce'
+import VALIDATION_LEVELS from './levels'
 
 /**
  * Checks to see if a given value is one of the valid options for

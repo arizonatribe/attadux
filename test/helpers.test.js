@@ -8,8 +8,8 @@ import {
     getTransitionsForMachine,
     getStateInputsForMachine,
     getStateInputsForAllMachines
-} from '../src/helpers/machines'
-import {createPayloadValidationsLogger, createPayloadPruner} from '../src/helpers/validations'
+} from '../src/machines'
+import {createPayloadValidationsLogger, createPayloadPruner} from '../src/validators'
 import {isStringieThingie} from '../src/helpers/is'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
 
