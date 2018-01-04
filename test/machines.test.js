@@ -5,10 +5,6 @@ import Duck from '../src/Duck'
 test('state machines:', (t) => {
     const namespace = 'attadux'
     const store = 'auth'
-    const initialState = {
-        baseUrl: 'http://localhost',
-        user: {}
-    }
     const types = [
         'AGREE_TO_TERMS',
         'ATTEMPT_LOGIN',
@@ -20,47 +16,6 @@ test('state machines:', (t) => {
         'LOGOUT_ERROR',
         'REJECT_TERMS'
     ]
-    const reducer = (state, action, dux) => {
-        switch (action.type) {
-            case dux.types.ATTEMPT_LOGOUT:
-            case dux.types.ATTEMPT_LOGIN:
-                return {
-                    ...state,
-                    states: {
-                        ...state.states,
-                        auth: dux.getNextStateForMachine('auth')(state, action)
-                    }
-                }
-            case dux.types.LOGOUT_ERROR:
-            case dux.types.LOGIN_ERROR:
-                return {
-                    ...state,
-                    error: action.error,
-                    states: {
-                        ...state.states,
-                        auth: dux.getNextStateForMachine('auth')(state, action)
-                    }
-                }
-            case dux.types.LOGIN_SUCCESSFUL:
-                return {
-                    ...state,
-                    user: action.user,
-                    states: {
-                        ...state.states,
-                        auth: dux.getNextStateForMachine('auth')(state, action)
-                    }
-                }
-            case dux.types.LOGOUT_SUCCESSFUL:
-                return {
-                    ...dux.initialState,
-                    states: {
-                        auth: dux.getNextStateForMachine('auth')(state, action)
-                    }
-                }
-            default:
-                return state
-        }
-    }
     const auth = {
         initial: {
             [`${namespace}/${store}/ATTEMPT_LOGIN`]: 'inProgress'
@@ -156,48 +111,6 @@ test('state machines:', (t) => {
         )
         nt.end()
     })
-
-    t.test('...advance to another state using the state machine manually, in the reducer', (nt) => {
-        const duck = new Duck({
-            useTransitions: false,
-            namespace,
-            store,
-            types,
-            machines,
-            initialState,
-            reducer
-        })
-        nt.deepEqual(
-            duck.reducer({...initialState, states: {auth: 'initial'}}, {type: `${namespace}/${store}/ATTEMPT_LOGIN`}),
-            {...initialState, states: {auth: 'inProgress'}},
-            'state has changed from \'initial\' to \'inProgress\''
-        )
-        nt.end()
-    })
-
-    t.test('...wont\'t move to an invalid state (also using the manual reducer pattern)',
-        (nt) => {
-            const duck = new Duck({
-                useTransitions: false,
-                namespace,
-                store,
-                types,
-                machines,
-                initialState,
-                reducer
-            })
-            const action = {
-                type: `${namespace}/${store}/LOGIN_SUCCESSFUL`,
-                user: {id: 123, name: 'David'}
-            }
-            nt.deepEqual(
-                duck.reducer({...initialState, states: {auth: 'initial'}}, action),
-                {...initialState, states: {auth: 'initial'}, user: {id: 123, name: 'David'}},
-                'verify the state did NOT change from \'initial\' to \'loggedIn\', but the reducer still processes the \'user\' payload'
-            )
-            nt.end()
-        }
-    )
 
     t.end()
 })

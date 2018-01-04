@@ -1,11 +1,11 @@
 /* eslint "max-len": "off" */
-import {compose, omit, identity} from 'ramda'
+import {always, compose, omit, identity} from 'ramda'
 import test from 'tape'
 import Duck from '../src/Duck'
 import createMiddleware from '../src/middleware'
 import {createRow} from '../src/helpers/duck'
 import {isStringieThingie} from '../src/helpers/is'
-import log, {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'
+import {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'
 
 test('middleware:', (ot) => {
     const namespace = 'attadux'
@@ -15,16 +15,20 @@ test('middleware:', (ot) => {
     const machines = dux => ({
         tense: {
             initial: {
+                [dux.types.FREEZE]: 'limbo',
                 [dux.types.HERE]: 'present'
             },
             past: {
+                [dux.types.FREEZE]: 'limbo',
                 [dux.types.HERE]: 'present'
             },
             present: {
+                [dux.types.FREEZE]: 'limbo',
                 [dux.types.REWIND]: 'past',
                 [dux.types.FAST_FORWARD]: 'future'
             },
             future: {
+                [dux.types.FREEZE]: 'limbo',
                 [dux.types.HERE]: 'present'
             },
             limbo: {}
@@ -69,34 +73,41 @@ test('middleware:', (ot) => {
 
     const stuffing = {types, reducer, store, creators, namespace, initialState, validators, machines}
     const row = createRow(
-        new Duck(omit('machines', stuffing)),
+        new Duck(stuffing),
         new Duck({...stuffing, store: 'huey'}),
         new Duck({...stuffing, store: 'dewey'}),
-        new Duck({...stuffing, store: 'louie'})
+        new Duck({...stuffing, store: 'louie'}),
+        new Duck({...omit('machines', stuffing), store: 'scrooge'})
     )
-    const middleware = createMiddleware(row)({getState: () => initialState})(identity)
+    const middleware = createMiddleware(row)({getState: always(initialState)})(identity)
+    const middlewareThenReducer = (duckName = store, muddleware = middleware, state) =>
+        compose(
+            a => row[duckName].reducer(state || row[duckName].initialState, a, row[duckName]),
+            muddleware
+        )
 
-    test('...wont\'t move to an invalid state despite a dispatched action whose purpose is to move to that state',
-        (t) => {
-            const result = middleware({
+    test('...wont\'t move to an invalid state despite a dispatched action that tries it to move to that state', (t) => {
+        t.deepEqual(
+            middlewareThenReducer()({
                 type: `${namespace}/${store}/CREATE_USER`,
-                user: {id: 123, name: 'David'}
-            })
-            log('result is:', result)
-
-            t.deepEqual(
-                result,
-                {...initialState, states: {tense: 'initial'}, user: {id: 123, name: 'David'}},
-                'state cannot change to \'loggedIn\' from \'initial\', but must transition to \'inProgress\' and wait there'
-            )
-            t.end()
-        }
-    )
+                user: {id: 123, name: {first: 'David'}}
+            }),
+            {...initialState, states: {tense: 'initial'}, user: {id: 123, name: {first: 'David'}}},
+            'state cannot change to \'loggedIn\' from \'initial\', but must transition to \'inProgress\' and wait there'
+        )
+        t.end()
+    })
 
     test('...whose machines can be extended', (t) => {
+        const presentState = {user: {}, states: {tense: 'present'}}
         const childDuck = row[store].extend({
             types: ['ED'],
-            machines: {tense: {present: {[`${namespace}/${store}/ED`]: 'pastPerfect'}}},
+            machines: {
+                tense: {
+                    present: {[`${namespace}/${store}/ED`]: 'pastPerfect'},
+                    pastPerfect: {[`${namespace}/${store}/HERE`]: 'present'}
+                }
+            },
             reducer: (state, action, dux) => {
                 switch (action.type) {
                     case dux.types.ED:
@@ -106,15 +117,19 @@ test('middleware:', (ot) => {
                 }
             }
         })
-        const mdlware = createMiddleware({[store]: childDuck})({getState: () => initialState})(identity)
+        const mdlware = createMiddleware({[store]: childDuck})({getState: always(presentState)})(identity)
 
         t.deepEqual(childDuck.machines.tense.present, {
+            [`${namespace}/${store}/FREEZE`]: 'limbo',
             [`${namespace}/${store}/REWIND`]: 'past',
             [`${namespace}/${store}/ED`]: 'pastPerfect',
             [`${namespace}/${store}/FAST_FORWARD`]: 'future'
         }, 'verify the child duck shows the added input type of \'ED\' on the \'pastPerfect\' state')
         t.deepEqual(
-            mdlware({type: `${namespace}/${store}/ED`}),
+            compose(
+                a => childDuck.reducer(presentState, a),
+                mdlware
+            )({type: `${namespace}/${store}/ED`}),
             {...initialState, states: {tense: 'pastPerfect'}},
             'state has changed from \'present\' to \'pastPerfect\' when external ED event occurred'
         )
@@ -123,7 +138,7 @@ test('middleware:', (ot) => {
 
     test('...can move to a VALID state when the approprate action is dispatched', (t) => {
         t.deepEqual(
-            middleware({type: `${namespace}/${store}/HERE`}),
+            middlewareThenReducer()({type: `${namespace}/${store}/HERE`}),
             {...initialState, states: {tense: 'present'}},
             'state has changed from \'initial\' to \'present\''
         )
@@ -137,7 +152,7 @@ test('middleware:', (ot) => {
             'initial state should include \'states\' even if not set up by the user'
         )
         t.deepEqual(
-            middleware({type: `${namespace}/${store}/HERE`}),
+            middlewareThenReducer()({type: `${namespace}/${store}/HERE`}),
             {...initialState, states: {tense: 'present'}},
             'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'present\''
         )
@@ -147,25 +162,26 @@ test('middleware:', (ot) => {
 
     test('...can move to a permanent state when desired', (t) => {
         t.deepEqual(
-            middleware({type: `${namespace}/${store}/FREEZE`}),
+            middlewareThenReducer()({type: `${namespace}/${store}/FREEZE`}),
             {...initialState, states: {tense: 'limbo'}},
             'gracefully confirms the current state has no possible transitions'
         )
-
         t.end()
     })
 
     test('...allows custom prop name for tracking machine states in the redux store', (t) => {
+        const iniState = {user: {}, authStates: {tense: 'initial'}}
         const duck = new Duck({
             stateMachinesPropName: 'authStates',
             namespace,
             store,
             types,
             machines,
+            validators,
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createMiddleware({[store]: duck})({getState: always(iniState)})(identity)
 
         t.deepEqual(
             duck.initialState.authStates,
@@ -173,25 +189,29 @@ test('middleware:', (ot) => {
             'initial state should include \'authStates\' even if not set up by the user'
         )
         t.deepEqual(
-            mdlware({type: `${namespace}/${store}/HERE`}),
-            {...initialState, authStates: {tense: 'present'}},
+            compose(
+                a => duck.reducer(iniState, a),
+                mdlware
+            )({type: `${namespace}/${store}/HERE`}),
+            {...iniState, authStates: {tense: 'present'}},
             'the \'authStates\' prop from the redux store properly reflects the change from \'initial\' to \'present\''
         )
-
         t.end()
     })
 
     test('...allows even custom prop names (for tracking machine states) that are nested paths (dot separated)', (t) => {
+        const futureState = {user: {}, future: {pluperative: {tense: 'future'}}}
         const duck = new Duck({
             stateMachinesPropName: 'future.pluperative',
             namespace,
             store,
             types,
             machines,
+            validators,
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createMiddleware({[store]: duck})({getState: always(futureState)})(identity)
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -199,25 +219,30 @@ test('middleware:', (ot) => {
             'initial state should include nested object path \'{future: {pluperative: {}}\' even if not set up by the user'
         )
         t.deepEqual(
-            mdlware({type: `${namespace}/${store}/HERE`}),
-            {...initialState, future: {pluperative: {tense: 'present'}}},
-            'the \'{future: {pluperative: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'present\''
+            compose(
+                a => duck.reducer(futureState, a),
+                mdlware
+            )({type: `${namespace}/${store}/HERE`}),
+            {...futureState, future: {pluperative: {tense: 'present'}}},
+            'the \'{future: {pluperative: { }}\' prop from the redux store properly reflects the change from \'future\' to \'present\''
         )
 
         t.end()
     })
 
     test('...allows custom prop names (for tracking machine states) that are an  array of string paths', (t) => {
+        const pastState = {user: {}, future: {pluperative: {tense: 'past'}}}
         const duck = new Duck({
             stateMachinesPropName: ['future', 'pluperative'],
             namespace,
             store,
             types,
             machines,
+            validators,
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createMiddleware({[store]: duck})({getState: always(pastState)})(identity)
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -225,9 +250,12 @@ test('middleware:', (ot) => {
             'initial state should include nested object path \'{future: {pluperative: {}}\' even if not set up by the user'
         )
         t.deepEqual(
-            mdlware({type: `${namespace}/${store}/HERE`}),
-            {...initialState, future: {pluperative: {tense: 'present'}}},
-            'the \'{future: {pluperative: { }}\' prop from the redux store properly reflects the change from \'initial\' to \'present\''
+            compose(
+                a => duck.reducer(pastState, a),
+                mdlware
+            )({type: `${namespace}/${store}/HERE`}),
+            {...pastState, future: {pluperative: {tense: 'present'}}},
+            'the \'{future: {pluperative: { }}\' prop from the redux store properly reflects the change from \'past\' to \'present\''
         )
 
         t.end()
@@ -235,23 +263,27 @@ test('middleware:', (ot) => {
 
     test('...validates nested prop paths which are invalid and ensures machine states are still tracked in the store', (t) => {
         const duck = new Duck({
-            stateMachinesPropName: [1, 2, new Date()],
+            stateMachinesPropName: [{}, [], null],
             namespace,
             store,
             types,
             machines,
+            validators,
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createMiddleware({[store]: duck})({getState: always(duck.initialState)})(identity)
 
         t.deepEqual(
-            duck.initialState.states,
-            {tense: 'initial'},
+            duck.initialState,
+            {...initialState, states: {tense: 'initial'}},
             'initial state should fall back to \'states\' as the path to track current state'
         )
         t.deepEqual(
-            mdlware({type: `${namespace}/${store}/HERE`}),
+            compose(
+                a => duck.reducer(duck.initialState, a),
+                mdlware
+            )({type: `${namespace}/${store}/HERE`}),
             {...initialState, states: {tense: 'present'}},
             'the \'states\' prop from the redux store properly reflects the change from \'initial\' to \'present\''
         )
@@ -259,36 +291,62 @@ test('middleware:', (ot) => {
         t.end()
     })
 
-    test('...wont\'t move to an invalid state and won\'t invoke the normal reducer when using strict mode',
-        (t) => {
-            const duck = new Duck({
-                namespace,
-                store,
-                types,
-                machines,
-                initialState,
-                reducer,
-                validationLevel: 'STRICT'
-            })
-            const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
-            const action = {
+    test('...wont\'t move to an invalid state or invoke the reducer when in strict mode', (t) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer,
+            validators,
+            validationLevel: 'STRICT'
+        })
+        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+
+        t.deepEqual(
+            mdlware({
                 type: `${namespace}/${store}/CREATE_USER`,
-                user: {id: 123, name: 'David'}
-            }
-            t.deepEqual(
-                mdlware(action),
-                {...initialState, states: {tense: 'initial'}},
-                'verify the state did NOT change from \'initial\' to \'present\' and the reducer is canceled'
-            )
-            t.end()
-        }
-    )
+                user: {id: 123, name: {first: 'David'}}
+            }),
+            false,
+            'verify the state did NOT change from \'initial\' to \'present\' and the reducer is canceled'
+        )
+        t.end()
+    })
+
+    test('...will prune invalid fields when in prune mode', (t) => {
+        const duck = new Duck({
+            namespace,
+            store,
+            types,
+            machines,
+            initialState,
+            reducer,
+            validators,
+            validationLevel: 'PRUNE'
+        })
+        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+
+        t.deepEqual(
+            mdlware({
+                type: `${namespace}/${store}/CREATE_USER`,
+                user: {id: 123, name: {first: 'D'}}
+            }),
+            {type: `${namespace}/${store}/CREATE_USER`, user: {id: 123}},
+            'verify the invalid first name field was pruned from the action payload'
+        )
+        t.end()
+    })
 
     test('...after validating the paylod using a speific duck in the row append current state', (t) => {
-        const action = {type: `${namespace}/huey/CREATE_USER`, user: {age: 21, name: {first: 'huey', last: 'duck'}}}
+        const user = {age: 21, name: {first: 'huey', last: 'duck'}}
+        
         t.deepEqual(
-            middleware(action),
-            {...action, states: {tense: 'initial'}},
+            middlewareThenReducer('huey')({
+                type: `${namespace}/huey/CREATE_USER`, user
+            }),
+            {user, states: {tense: 'initial'}},
             'verify that the action is validated by the appropriate duck'
         )
         t.end()
@@ -296,7 +354,7 @@ test('middleware:', (ot) => {
 
     test('...which can also be configured to cancel the reducer if validations on the payload fail', (t) => {
         t.equal(
-            compose(row[store].reducer, middleware)({
+            middleware({
                 type: `${namespace}/${store}/CREATE_USER`,
                 user: {age: 11, name: {first: 'H', last: 'Potter'}}
             }),
@@ -308,11 +366,11 @@ test('middleware:', (ot) => {
 
     test('...but which pass the action when valid', (t) => {
         const action = {
-            type: `${namespace}/${store}/CREATE_USER`,
+            type: `${namespace}/scrooge/CREATE_USER`,
             user: {age: 14, name: {first: 'Harry', last: 'Potter'}}
         }
         t.deepEqual(
-            compose(row[store].reducer, middleware)(action),
+            middleware(action),
             action,
             'verify that reducer was able to modify state, since the payload was deemed valid'
         )

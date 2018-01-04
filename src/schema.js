@@ -236,9 +236,6 @@ export const validateAndSetValues = (options) => {
         stateMachinesPropName: ['states'],
         ...evolve(evolvers, pick(keys(evolvers), validatedOptions)),
         ...(pickBy(isNotEmpty, {invalidOptions: pruneValidatedFields(validationsResult)})),
-        // ...(anyValidationFailures(validationsResult) ? {
-        //     invalidOptions: pruneValidatedFields(validationsResult)
-        // } : {}),
         options: validatedOptions
     }
 }

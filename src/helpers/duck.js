@@ -5,6 +5,7 @@ import {
     anyPass,
     compose,
     complement,
+    curry,
     defaultTo,
     either,
     filter,
@@ -27,7 +28,7 @@ import {
 
 import {isDux, isPlainObj, isNotBlankString, isPrimitiveish} from './is'
 
-import {coerceToFn} from './coerce'
+import {coerceToFn, coerceToArray} from './coerce'
 
 /**
  * Checks whether or not a given Object contains ducks
@@ -63,20 +64,26 @@ export const createRow = (...ducks) =>
  * (un-merged) if one of the params is not an Object.
  *
  * @func
- * @sig ({k: v}, {k: v}) -> {k: v}
+ * @sig ({k: v}, {k: v}) -> *
  * @param {Object} parent An Object whose props will have lower precedence when
  * merged with another Object
  * @param {Object} child An Object whose props will have higher precedence when
  * merged with another Object
- * @returns {Object} the merged result of two objects
+ * @returns {*} the merged result of two values
  */
 export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
+        if (is(Array, parent) || !isNil(child)) {
+            return [...parent, ...coerceToArray(child)]
+        }
         return parent
     } else if (isPrimitiveish(child) || is(Function, child)) {
         return child
+    } else if (is(Array, parent)) {
+        return [...parent, ...coerceToArray(child)]
     }
-    return [...parent, ...child]
+
+    return {...parent, ...child}
 }
 
 /**
@@ -84,19 +91,23 @@ export const simpleMergeStrategy = (parent, child) => {
  * a portion of two duck together at a specified prop
  *
  * @func
- * @sig ({k: v}, {k: v}) -> (String -> {k: v})
+ * @sig {k: v} -> {k: v} -> String -> {k: v}
  * @param {Object} parentDuck A duck that has already been built
  * @param {Object} childDuckOptions A set of options from which a duck can be built
  * @returns {Function} A function that takes the name of a prop on a duck, and
  * will merge the parent and child together at that location
  */
-export const createExtender = (parentDuck, childDuckOptions) =>
-    (key) => {
+export const createExtender = curry(
+    (parentDuck, childDuckOptions, key) => {
         if ([childDuckOptions, parentDuck].some(d => is(Function, d[key]))) {
             return {
                 [key]: duck => {
                     const parent = coerceToFn(parentDuck[key])(duck)
-                    return {...parent, ...coerceToFn(childDuckOptions[key])(duck, parent)}
+                    return mergeDeepWith(
+                        simpleMergeStrategy,
+                        parent,
+                        coerceToFn(childDuckOptions[key])(duck, parent)
+                    )
                 }
             }
         } else if (isNil(childDuckOptions[key])) {
@@ -104,6 +115,7 @@ export const createExtender = (parentDuck, childDuckOptions) =>
         }
         return {[key]: mergeDeepWith(simpleMergeStrategy, parentDuck[key], childDuckOptions[key])}
     }
+)
 
 /**
  * A function which takes an Object of one or more ducks and creates a function that will

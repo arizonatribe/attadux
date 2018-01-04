@@ -12,6 +12,7 @@ import {
     ifElse,
     is,
     isEmpty,
+    keys,
     not,
     nth,
     prop,
@@ -26,6 +27,7 @@ import {
 
 import {isPlainObj} from './is'
 import {createConstants} from './types'
+import {coerceToString} from './coerce'
 
 export const {VALIDATION_LEVELS} = createConstants({
     VALIDATION_LEVELS: ['STRICT', 'CANCEL', 'PRUNE', 'LOG']
@@ -40,7 +42,7 @@ export const {VALIDATION_LEVELS} = createConstants({
  * @param {String} level One of the four valid options: STRICT, CANCEL, PRUNE, LOG
  * @returns {Boolean} Whether or not a level is valid for middleware validations
  */
-export const isValidationLevel = contains(__, VALIDATION_LEVELS)
+export const isValidationLevel = contains(__, keys(VALIDATION_LEVELS))
 
 /**
  * Sets a validation level, one of: STRICT, CANCEL, PRUNE, LOG.
@@ -55,7 +57,7 @@ export const makeValidationLevel = compose(
     ifElse(isValidationLevel, identity, always('CANCEL')),
     toUpper,
     trim,
-    toString
+    coerceToString
 )
 
 /**

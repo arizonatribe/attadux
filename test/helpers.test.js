@@ -186,7 +186,7 @@ test('getCurrentState', (t) => {
 
     test('...fails to createMachines when inputs aren\'t action types', (nt) => {
         nt.deepEqual(
-            createMachines(machines), {
+            createMachines(machines, {types: {ONE: 'ONE', TWO: 'TWO', THREE: 'THREE'}}), {
                 auth: {initial: {}, loggedIn: {}, loggedOut: {}},
                 termsOfService: {initial: {}, agreed: {}, rejected: {}}
             }, 'machines are empty if input types aren\'t registered'
@@ -204,13 +204,13 @@ test('getCurrentState', (t) => {
     })
 
     test('...fails gracefully', (nt) => {
-        nt.deepEqual(getCurrentState(), {}, 'always returns an object')
+        nt.deepEqual(getCurrentState()(), {}, 'always returns an object')
         nt.end()
     })
 
     test('...retrieves current state of each machine', (nt) => {
         nt.deepEqual(
-            getCurrentState(initialState, {machines, stateMachinesPropName: 'states'}),
+            getCurrentState({machines, stateMachinesPropName: 'states'})(initialState),
             {auth: 'initial', termsOfService: 'initial'},
             'verify the current state of \'initial\''
         )

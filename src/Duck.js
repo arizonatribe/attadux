@@ -1,13 +1,13 @@
 import spected from 'spected'
-import {assocPath, has, isEmpty, isNil, map, mergeDeepWith} from 'ramda'
+import {assocPath, has, isNil, map, mergeDeepWith} from 'ramda'
 import {duxDefaults, validateAndSetValues, setProp} from './schema'
-import {isPlainObj} from './helpers/is'
+import {isPlainObj, isNotEmpty} from './helpers/is'
 import {coerceToFn} from './helpers/coerce'
 import {createExtender} from './helpers/duck'
 import {concatOrReplace} from './helpers/types'
 import {deriveSelectors} from './helpers/selectors'
 import {createPayloadValidator, createPayloadValidationsLogger, createPayloadPruner} from './helpers/validations'
-import {createMachines, getDefaultStateForMachines, getNextState, getNextStateForMachine} from './helpers/machines'
+import {addTransitionsToState, createMachines, getDefaultStateForMachines, getNextState} from './helpers/machines'
 
 
 export default class Duck {
@@ -18,23 +18,34 @@ export default class Duck {
         setProp.call(this, 'machines', () => createMachines(coerceToFn(this.options.machines)(this), this))
         setProp.call(this, 'initialState', () => {
             const initial = coerceToFn(this.options.initialState)(this)
-            return isEmpty(this.machines) ? initial : {
+            return isNotEmpty(this.machines) ? {
                 ...(isPlainObj(initial) ? initial : {}),
                 ...assocPath(this.stateMachinesPropName, getDefaultStateForMachines(this.machines), {})
-            }
+            } : initial
         })
         setProp.call(this, 'selectors', () => deriveSelectors(coerceToFn(this.options.selectors)(this)))
         setProp.call(this, 'creators', () => coerceToFn(this.options.creators)(this))
-        setProp.call(this, 'reducer', () => this.reducer.bind(this))
+        setProp.call(this, 'reducer', () => (
+            isNotEmpty(this.machines) ? this.transitions.bind(this) : this.reducer.bind(this)
+        ))
 
         if (has('validators', this)) {
             this.isPayloadValid = createPayloadValidator(this.validators)
             this.getValidationErrors = createPayloadValidationsLogger(this.validators)
             this.pruneInvalidFields = createPayloadPruner(this.validators)
         }
-        if (has('machines', this)) {
-            this.getNextState = getNextState.bind(this)
-            this.getNextStateForMachine = getNextStateForMachine.bind(this)
+    }
+
+    transitions(state, action = {}) {
+        const stateWithTransitions = addTransitionsToState(state, this)
+
+        const updatedStates = assocPath(
+            this.stateMachinesPropName, getNextState(stateWithTransitions, action, this), {}
+        )
+
+        return {
+            ...this.options.reducer({...stateWithTransitions, ...updatedStates}, action, this),
+            ...updatedStates
         }
     }
 
@@ -55,8 +66,8 @@ export default class Duck {
             ...extendFromParentOptions('validators'),
             ...extendProp('selectors'),
             ...extendProp('creators'),
-            types: [...parentOptions.types, ...extendedOptions.types],
             consts: mergeDeepWith(concatOrReplace, parentOptions.consts, extendedOptions.consts),
+            types: [...parentOptions.types, ...extendedOptions.types],
             reducer: (state, action, duck) => {
                 const reduced = parentOptions.reducer(isNil(state) ? duck.initialState : state, action, duck)
                 return (isNil(extendedOptions.reducer)) ? reduced : extendedOptions.reducer(reduced, action, duck)

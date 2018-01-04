@@ -28,18 +28,35 @@ When instantiating a `Duck` you'll pass a single prop, which is just an `Object`
 * __machines__ - An `Object` of `Object`s (but nothing nested deeper than that second `Object`). Each of those nested objects is a possible "state" for your component (or your application as a whole, if you want to use just one state machine to cover the entire app). Your component (or app) can be in only one state at a time and that "current state" is a `String` value that will be automatically populated when your dispatched Redux action forces a change to a different state. For the nested object: the key is the unique name for that state and the value (which is an object) contains all the transitions to which that state is allowed to change. When representing those allowed state transitions the key must match a Redux action `type` (ie, "LOGIN_USER_SUCCESSFUL", "LOGIN_USER_ERROR", etc.) and the value must match a the name of one of the other states defined for that machine. State machines may be a little confusing the first time you encounter the topic (and specifically how you might graft it into your Redux ecosystem), but the author of the [stent](https://github.com/krasimir/stent) library wrote up a [great article](http://krasimirtsonev.com/blog/article/managing-state-in-javascript-with-state-machines-stent) which might help clarify how state machines could work in JavaScript. However Attadux has not implemented state machines using Stent nor have state machines been grafted into Redux in the way that author or others have attempted. The [redux-machine](https://github.com/mheiber/redux-machine) library is the closest to the way state machines have been implemented in Attadux, which just sets a "status" prop to represent the current/new state whenever your reducer is invoked.
 * __creators__ - An `Object` of action-creator functions (or a `Function` returning an `Object` of them) which return a plain 'old JavaScript `Object` representing the action to be dispatched to your reducer(s). It must contain a `type` prop.
 * __validators__ - An `Object` of "validators" (or a `Function` returning an `Object` of them). This feature requires some explanation, as it is not part of the boilerplate developers are accustomed to in Redux application. The simplest use for a validator is to use it in your `reduxForm()` function call (if you do use [redux-form](https://github.com/erikras/redux-form)) and it will return an object where valid and invalid values are represented with `true` and and `Array` of error messages, respectively. This feature leverages an outstanding, simple library called [spected](https://github.com/25th-floor/spected). Spected is a simple, small, yet powerful tool (built using only [Ramda](https://ramdajs.com)) and it curries your validation schema. Which means you can extract that curried validator from the Duck instance and run it as often as you wish against any input that must match your schema. Also, the author of spected built a form validation library on top of spected, called [Revalidation](https://github.com/25th-floor/revalidation) which you can leverage instead of Redux Form, if you find its API to be more suited to how you compose front-end components.
-
-Some other `Boolean` props are also available to control Attadux's more advanced behavior:
-
-* __useTransitions__ - (defaults to `true`)
-* __cancelReducerOnValidationError__ - (defaults to `false`)
-* __strictTransitions__ - (defaults to `false`)
+* __validationLevel__ - If you have set your __validators__ and you've named any of them to match a redux action type, they will be applied in the middleware chain to validate the action's payload according to one of four possible strategies:
+    * `LOG` - will always pass through a dispatched action but will append a `validationErrors` prop to the payload if any validations fail
+    * `PRUNE` - will always pass through a dispatched action but will remove any invalid fields from the payload
+    * `CANCEL` (default) - stops the middleware chain when validations fail on a dispatched action
+    * `STRICT` - will only pass validated payloads whose action types are listed as inputs for the _current_ state of a given state machine
 
 Also, if you wish to track machine states on a prop other than `states` (at the root of the `initialState` object), provide an alternate value for the `stateMachinesPropName` prop (defaults to 'states'). This value can be any one of the following:
 
 * a single string value representing the prop name to place at the root of the `initialState` object (ie, 'status')
 * an array of string values representing a nested path (ie, ['user', 'login', 'currentState']
 * a single dot-separated string value representing the nested path (ie, 'user.login.currentState')
+
+## Middleware
+
+The middleware currently has one purpose, to validate any of the dispatched redux actions. You can, of course, use validators for many things - like user form input - but if you give a validator the same name as a redux action type, then you can use it to validate a redux action. All you need to do (aside from naming your validator appropriately) is apply the attadux middleware when you configure your redux store.
+
+```javascript
+import {createStore, applyMiddleware} from 'redux'
+import {validatorMiddleware} from 'attadux'
+
+import initialState from './initialState'
+import reducers from './reducers'
+
+export default createStore(
+    reducers,
+    initialState,
+    applyMiddleware(validatorMiddleware)
+)
+```
 
 ## State Machines & Validators
 

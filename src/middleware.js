@@ -1,5 +1,4 @@
-import {__, always, assocPath, call, compose, defaultTo, F, identity, ifElse, pickBy, prop, T} from 'ramda'
-import {isNoNil} from './helpers/is'
+import {__, always, assoc, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, prop, T} from 'ramda'
 import {createDuckLookup} from './helpers/duck'
 import {isActionTypeInCurrentState, noMachines} from './helpers/machines'
 import {getRowValidationErrors} from './schema'
@@ -20,51 +19,42 @@ export default (row) => {
             isPayloadValid = T,
             getValidationErrors = always(null),
             pruneInvalidFields = always(action),
-            getNextState = always({}),
             stateMachinesPropName = 'states',
-            validationLevel = always(VALIDATION_LEVELS.CANCEL)
+            validationLevel = VALIDATION_LEVELS.CANCEL
         } = getDuckMatchingAction(action)
 
-        if (noMachines(machines)) {
-            return next(action)
-        }
-
-        const prevState = getState()
+        if (noMachines(machines)) return next(action)
 
         const validatorsByLevel = {
             /* Simple cancel if payload returns any invalid fields */
             [VALIDATION_LEVELS.CANCEL]: ifElse(isPayloadValid, identity, F),
             /* Always pass the action through, but add a validationErrors prop if there are any */
-            [VALIDATION_LEVELS.LOG]: a => always({
-                ...action,
-                ...pickBy(isNoNil, {validationErrors: getValidationErrors(a)})
-            }),
+            [VALIDATION_LEVELS.LOG]: converge(merge, [identity, compose(
+                ifElse(isNil,
+                    always({}),
+                    compose(assoc('validationErrors', __, {}))
+                ),
+                getValidationErrors
+            )]),
             /* Remove all invalid fields from the action */
             [VALIDATION_LEVELS.PRUNE]: pruneInvalidFields,
             /* Only pass actions that are registered as inputs to the state machine for the current state */
             [VALIDATION_LEVELS.STRICT]: ifElse(
-                compose(
-                    isActionTypeInCurrentState(prevState, __, {machines, stateMachinesPropName})
+                converge(isActionTypeInCurrentState,
+                    [getState, identity, always({machines, stateMachinesPropName})]
                 ),
-                // useWith(
-                //     isActionTypeInCurrentState,
-                //     [always(prevState), identity, always({machines, stateMachinesPropName})]
-                // ),
                 identity,
                 F
             )
         }
 
+        /* Get the validator matching the validationLevel setting and run it on the action payload */
         const validatedAction = call(
             compose(defaultTo(identity), prop(validationLevel))(validatorsByLevel),
             action
         )
 
-        return validatedAction && {
-            ...next(validatedAction),
-            ...assocPath(
-                stateMachinesPropName, getNextState(prevState, validatedAction), {}
-            )
-        }
+        /* either pass the validated action forward through the middleware chain or stop it right here */
+        return validatedAction && next(validatedAction)
     }
 }
