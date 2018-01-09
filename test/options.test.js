@@ -1,5 +1,5 @@
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuckWith} from '../src/Duck'
 import {duxDefaults} from '../src/schema/rules'
 
 test('default values for all options have not changed', (t) => {
@@ -21,8 +21,8 @@ test('default values for all options have not changed', (t) => {
 })
 
 test('options object from the parent is accessible to the child (extended) duck', (t) => {
-    const duck = new Duck({consts: {foo: 2}})
-    const childDuck = duck.extend({
+    const duck = createDuck({consts: {foo: 2}})
+    const childDuck = extendDuckWith(duck, {
         initialState: ({consts}) => ({
             bar: consts.foo * 2
         })
@@ -36,8 +36,8 @@ test('options object from the parent is accessible to the child (extended) duck'
 })
 
 test('the parent duck instance can be used when options passed into extend() is a function', (t) => {
-    const duck = new Duck({consts: {foo: 2}})
-    const childDuck = duck.extend(parent => ({consts: {bar: parent.consts.foo * 2}}))
+    const duck = createDuck({consts: {foo: 2}})
+    const childDuck = extendDuckWith(duck, parent => ({consts: {bar: parent.consts.foo * 2}}))
     t.equal(
         childDuck.consts.bar,
         4,

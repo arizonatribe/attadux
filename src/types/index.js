@@ -2,6 +2,7 @@ import {
     allPass,
     always,
     compose,
+    curry,
     filter,
     ifElse,
     is,
@@ -93,8 +94,9 @@ export const createConstants = ifElse(
  * and creates an Object formatted such that the each key and value matches the string,
  * but formatted as 'namespace/store/type'
  */
-export const createTypes = ({namespace, store} = {}) =>
-    (types = []) => zipObj(
+export const createTypes = curry(
+    ({namespace, store}, types) => zipObj(
         types,
         types.map(type => `${namespace || ''}/${store || ''}/${type}`)
     )
+)

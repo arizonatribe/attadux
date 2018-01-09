@@ -1,10 +1,10 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuckWith} from '../src/Duck'
 import {createSelector, createDuckSelector} from '../src/selectors'
 
 test('lets the selectors compose themselves and reference the duck instance', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         initialState: {
             items: [
                 {name: 'apple', value: 1.2},
@@ -33,7 +33,7 @@ test('lets the selectors compose themselves and reference the duck instance', (t
 
 test('generates the selector function once per selector', (t) => {
     let numOfSelectors = 0
-    const duck = new Duck({
+    const duck = createDuck({
         selectors: {
             myFunc: createDuckSelector(() => {
                 numOfSelectors++
@@ -48,7 +48,7 @@ test('generates the selector function once per selector', (t) => {
 })
 
 test('memoizes selector(s) and passes them all duck selectors when createSelector applied manually by the user', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         selectors: {
           test1: state => state.test1,
           test2: createDuckSelector(selectors => createSelector(
@@ -70,7 +70,7 @@ test('memoizes selector(s) and passes them all duck selectors when createSelecto
 })
 
 test('memoizes selector(s) and passes them all the duck selectors, using createSelector when an array of selectors', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         selectors: {
           test1: state => state.test1,
           test2: createDuckSelector(selectors => ([
@@ -92,7 +92,7 @@ test('memoizes selector(s) and passes them all the duck selectors, using createS
 })
 
 test('extending updates the old selectors with the new properties', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         namespace: 'a',
         store: 'x',
         initialState: {
@@ -105,7 +105,7 @@ test('extending updates the old selectors with the new properties', (t) => {
             items: state => state.items // gets the items from complete state
         }
     })
-    const childDuck = duck.extend({
+    const childDuck = extendDuckWith(duck, {
         namespace: 'b',
         store: 'y',
         selectors: {

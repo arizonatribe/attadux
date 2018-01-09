@@ -1,7 +1,7 @@
-import {__, always, assoc, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, prop, T} from 'ramda'
-import {createDuckLookup} from '../helpers/duck'
+import {always, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, objOf, prop, T} from 'ramda'
 import {isActionTypeInCurrentState, noMachines} from '../machines'
 import {getRowValidationErrors} from '../schema'
+import {createDuckLookup} from '../helpers/duck'
 import VALIDATION_LEVELS from './levels'
 
 export default (row) => {
@@ -30,10 +30,7 @@ export default (row) => {
             [VALIDATION_LEVELS.CANCEL]: ifElse(isPayloadValid, identity, F),
             /* Always pass the action through, but add a validationErrors prop if there are any */
             [VALIDATION_LEVELS.LOG]: converge(merge, [identity, compose(
-                ifElse(isNil,
-                    always({}),
-                    compose(assoc('validationErrors', __, {}))
-                ),
+                ifElse(isNil, always({}), objOf('validationErrors')),
                 getValidationErrors
             )]),
             /* Remove all invalid fields from the action */

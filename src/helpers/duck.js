@@ -2,33 +2,52 @@ import {
     __,
     allPass,
     always,
+    any,
     anyPass,
+    applyTo,
     compose,
     complement,
+    concat,
+    cond,
+    converge,
     curry,
     defaultTo,
     either,
     filter,
     has,
     head,
+    identity,
     ifElse,
     is,
     isEmpty,
     isNil,
     keys,
+    map,
+    mapAccum,
+    mergeAll,
+    mergeDeepRight,
     mergeDeepWith,
     none,
     nth,
+    objOf,
+    of,
     prop,
     reduce,
     split,
+    T,
     type as getType,
+    uniq,
     values
 } from 'ramda'
 
+// import log from '../../test/util'
 import {isDux, isPlainObj, isNotBlankString, isPrimitiveish} from './is'
 
 import {coerceToFn, coerceToArray} from './coerce'
+
+import {duxDefaults} from '../schema/rules'
+
+import {concatOrReplace} from '../types'
 
 /**
  * Checks whether or not a given Object contains ducks
@@ -73,17 +92,19 @@ export const createRow = (...ducks) =>
  */
 export const simpleMergeStrategy = (parent, child) => {
     if (getType(parent) !== getType(child) || isNil(child)) {
-        if (is(Array, parent) || !isNil(child)) {
+        if (is(Array, parent) && !isNil(child)) {
             return [...parent, ...coerceToArray(child)]
         }
-        return parent
+        if (!isPlainObj(parent)) {
+            return parent
+        }
     } else if (isPrimitiveish(child) || is(Function, child)) {
         return child
     } else if (is(Array, parent)) {
         return [...parent, ...coerceToArray(child)]
     }
 
-    return {...parent, ...child}
+    return mergeDeepRight(parent, child)
 }
 
 /**
@@ -91,30 +112,32 @@ export const simpleMergeStrategy = (parent, child) => {
  * a portion of two duck together at a specified prop
  *
  * @func
- * @sig {k: v} -> {k: v} -> String -> {k: v}
- * @param {Object} parentDuck A duck that has already been built
+ * @sig {k: v} -> {k: v} -> String -> *
  * @param {Object} childDuckOptions A set of options from which a duck can be built
+ * @param {Object} parentDuck A duck that has already been built
+ * @param {String} key A key name from which to match child options to parent (same prop for both)
  * @returns {Function} A function that takes the name of a prop on a duck, and
- * will merge the parent and child together at that location
+ * will merge the parent and child together for that prop
  */
-export const createExtender = curry(
-    (parentDuck, childDuckOptions, key) => {
-        if ([childDuckOptions, parentDuck].some(d => is(Function, d[key]))) {
-            return {
-                [key]: duck => {
-                    const parent = coerceToFn(parentDuck[key])(duck)
-                    return mergeDeepWith(
-                        simpleMergeStrategy,
-                        parent,
-                        coerceToFn(childDuckOptions[key])(duck, parent)
-                    )
-                }
-            }
-        } else if (isNil(childDuckOptions[key])) {
-            return isNil(parentDuck[key]) ? {} : {[key]: parentDuck[key]}
-        }
-        return {[key]: mergeDeepWith(simpleMergeStrategy, parentDuck[key], childDuckOptions[key])}
-    }
+export const createOptionsExtender = curry(
+    (childDuckOptions, parentDuck, key) =>
+        cond([
+            /* If the key at the child or parent is a function */
+            [compose(any(compose(is(Function), prop(key)))), always(
+                /* then they both need to be invoked (coerced to fn, if not) and their results merged */
+                converge(mergeDeepWith(simpleMergeStrategy), [
+                    coerceToFn(parentDuck[key]),
+                    converge(coerceToFn(childDuckOptions[key]), [
+                        identity,
+                        coerceToFn(parentDuck[key])
+                    ])
+                ])
+            )],
+            /* If the child doesn't have anything at that key, just return from the parent */
+            [compose(isNil, prop(key)), always(parentDuck[key])],
+            /* Otherwise, simply merge the parent and child together at that key */
+            [T, compose(mergeDeepWith(simpleMergeStrategy, parentDuck[key]), prop(key))]
+        ])(childDuckOptions)
 )
 
 /**
@@ -140,3 +163,57 @@ export const createDuckLookup = row =>
         split('/'),
         prop('type')
     )
+
+/**
+ * Takes an already built duck and the options for building a new one and
+ * extends the new options onto the options and simple props of the already
+ * built duck.
+ * The combined object can be passed as options when creating a new duck.
+ *
+ * @func
+ * @sig {k: v} -> {k: v} -> {k: v}
+ * @param {Object} duck An existing duck from which a new duck will be based
+ * @param {Object} options A set of options to be merged with those of an
+ * existing duck (to be used together whenn creating a new duck)
+ * @returns {Object} a merged set of options to be fed into a new duck
+ */
+export const extendDuckOptions = duck => {
+    const {options: parentOptions} = duck
+    const extendOptions = compose(
+        reduce(mergeDeepRight, {}),
+        concat([duxDefaults, parentOptions]),
+        of,
+        applyTo(duck),
+        coerceToFn
+    )
+
+    return options => {
+        const childOptions = extendOptions(options)
+        const optionBuilders = [
+            ['consts', always(mergeDeepWith(concatOrReplace, parentOptions.consts, childOptions.consts))],
+            ['types', compose(uniq, concat(parentOptions.types), concat(childOptions.types), keys, prop('types'))],
+            ['initialState', createOptionsExtender(childOptions)],
+            ['machines', createOptionsExtender(childOptions)],
+            ['creators', createOptionsExtender(childOptions)],
+            ['selectors', createOptionsExtender(childOptions)],
+            ['validators', createOptionsExtender(extendOptions(parentOptions))]
+        ]
+        const buildOptions = compose(
+            mergeDeepRight(childOptions),
+            mergeAll,
+            map(head),
+            mapAccum(
+                (mergedDuck, [key, builder]) => {
+                    const option = compose(
+                        objOf(key),
+                        ifElse(is(Function), applyTo(key), identity),
+                        builder
+                    )(mergedDuck)
+                    return [mergeDeepRight(mergedDuck, option), option]
+                },
+                duck
+            )
+        )
+        return compose(mergeDeepRight(childOptions), buildOptions)(optionBuilders)
+    }
+}

@@ -7,6 +7,7 @@ import {
     either,
     equals,
     filter,
+    identity,
     is,
     last,
     length,
@@ -16,9 +17,29 @@ import {
     uniq,
     values
 } from 'ramda'
-import {areStateNamesStrings, areInputsAndTransitionsStrings, isEachTransitionAmongMachineStates} from '../machines'
-import {isNotEmpty, isPrimitiveish, isPlainObj, isStringieThingie} from '../helpers/is'
-import {isValidationLevel} from '../validators'
+import {
+    isNotEmpty,
+    isPrimitiveish,
+    isPlainObj,
+    isStringieThingie
+} from '../helpers/is'
+import {
+    areStateNamesStrings,
+    areInputsAndTransitionsStrings,
+    getStateMachinesPropPath,
+    isEachTransitionAmongMachineStates
+} from '../machines'
+import {createConstants} from '../types'
+import {isValidationLevel, makeValidationLevel} from '../validators'
+
+
+export const metadataEvolvers = {
+    namespace: identity,
+    store: identity,
+    validationLevel: makeValidationLevel,
+    stateMachinesPropName: getStateMachinesPropPath,
+    consts: createConstants
+}
 
 export const duxDefaults = {
     consts: {},

@@ -1,8 +1,8 @@
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuckWith} from '../src/Duck'
 
 test('lets the creators reference the duck instance', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         types: ['FETCH'],
         creators: ({types}) => ({
           get: id => ({type: types.FETCH, id})
@@ -16,7 +16,7 @@ test('lets the creators reference the duck instance', (t) => {
 })
 
 test('lets the creators access the selectors', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         selectors: {
             sum: numbers => numbers.reduce((sum, n) => sum + n, 0)
         },
@@ -40,12 +40,12 @@ test('lets the creators access the selectors', (t) => {
 })
 
 test('extending merges new creators with those from the original duck', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         creators: () => ({
             get: () => ({type: 'GET'})
         })
     })
-    const childDuck = duck.extend({
+    const childDuck = extendDuckWith(duck, {
         creators: () => ({
             delete: () => ({type: 'DELETE'})
         })
@@ -59,19 +59,21 @@ test('extending merges new creators with those from the original duck', (t) => {
 })
 
 test('lets the child creators access the parent creators', (t) => {
-    const d1 = new Duck({
+    const d1 = createDuck({
+        namespace: 'a',
+        store: 'x',
         types: ['LOREM'],
         creators: () => ({
             get: () => ({d1: true})
         })
     })
-    const d2 = d1.extend({
+    const d2 = extendDuckWith(d1, {
         types: ['IPSUM'],
         creators: (duck, parent) => ({
             get: () => ({...(parent || {get: () => true}).get(duck), d2: true})
         })
     })
-    const d3 = d2.extend({
+    const d3 = extendDuckWith(d2, {
         types: ['DOLOR', 'SIT', 'AMET'],
         creators: (duck, parent) => ({
             get: () => ({...(parent || {get: () => true}).get(duck), d3: true})
@@ -82,7 +84,7 @@ test('lets the child creators access the parent creators', (t) => {
 })
 
 test('updates the old creators with the new properties', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         namespace: 'a',
         store: 'x',
         types: ['GET'],
@@ -90,7 +92,7 @@ test('updates the old creators with the new properties', (t) => {
             get: () => ({type: types.GET})
         })
     })
-    const childDuck = duck.extend({namespace: 'b', store: 'y'})
+    const childDuck = extendDuckWith(duck, {namespace: 'b', store: 'y'})
     t.deepEqual(childDuck.creators.get(), {type: 'b/y/GET'})
     t.end()
 })
