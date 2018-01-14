@@ -10,7 +10,7 @@ import {
     getStateInputsForAllMachines
 } from '../src/machines'
 import {createPayloadValidationsLogger, createPayloadPruner} from '../src/validators'
-import {isStringieThingie} from '../src/helpers/is'
+import {isStringieThingie} from '../src/util'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
 
 test('getTransitionsForMachine', (t) => {

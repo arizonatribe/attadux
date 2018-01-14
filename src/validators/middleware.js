@@ -1,7 +1,7 @@
 import {always, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, objOf, prop, T} from 'ramda'
 import {isActionTypeInCurrentState, noMachines} from '../machines'
-import {getRowValidationErrors} from '../schema'
-import {createDuckLookup} from '../helpers/duck'
+import {getRowValidationErrors} from '../duck/validate'
+import {createDuckLookup} from '../duck/create'
 import VALIDATION_LEVELS from './levels'
 
 export default (row) => {
@@ -24,7 +24,7 @@ export default (row) => {
         } = getDuckMatchingAction(action)
 
         if (noMachines(machines)) return next(action)
-
+        
         const validatorsByLevel = {
             /* Simple cancel if payload returns any invalid fields */
             [VALIDATION_LEVELS.CANCEL]: ifElse(isPayloadValid, identity, F),

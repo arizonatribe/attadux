@@ -15,8 +15,7 @@ import {
     zipObj
 } from 'ramda'
 
-import {isNotNil, isPrimitiveish} from '../helpers/is'
-import {listOfPairsToOneObject, coerceToArray} from '../helpers/coerce'
+import {isNotNil, isPrimitiveish, listOfPairsToOneObject, coerceToArray} from '../util'
 
 /**
  * Retrieves all a duck's namespaced types

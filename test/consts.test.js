@@ -1,5 +1,5 @@
 import test from 'tape'
-import {createDuck, extendDuckWith} from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('creates the constant objects', (t) => {
     const duck = createDuck({consts: {statuses: ['READY', 'ERROR']}})
@@ -103,14 +103,14 @@ test('cannot overwrite a constant', (t) => {
 
 test('extending the duck also copies the original consts', (t) => {
     const duck = createDuck({consts: {statuses: ['NEW']}})
-    const childDuck = extendDuckWith(duck, {})
+    const childDuck = extendDuck(duck, {})
     t.deepEqual(childDuck.consts.statuses, {NEW: 'NEW'})
     t.end()
 })
 
 test('extending the duck merges new consts with those from the original duck', (t) => {
     const duck = createDuck({consts: {statuses: ['READY']}})
-    const childDuck = extendDuckWith(duck, {consts: {statuses: ['FAILED']}})
+    const childDuck = extendDuck(duck, {consts: {statuses: ['FAILED']}})
     t.deepEqual(childDuck.consts.statuses, {READY: 'READY', FAILED: 'FAILED'})
     t.end()
 })

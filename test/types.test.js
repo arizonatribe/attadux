@@ -1,5 +1,5 @@
 import test from 'tape'
-import {createDuck, extendDuckWith} from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('transforms types in object with prefix', (t) => {
     t.deepEqual(
@@ -20,7 +20,7 @@ test('extending overrides the types', (t) => {
         store: 'x',
         types: ['FETCH']
     })
-    const childDuck = extendDuckWith(duck, {namespace: 'ns2', store: 'y'})
+    const childDuck = extendDuck(duck, {namespace: 'ns2', store: 'y'})
     t.deepEqual(
         childDuck.types,
         {FETCH: 'ns2/y/FETCH'},
@@ -31,7 +31,7 @@ test('extending overrides the types', (t) => {
 
 test('extending also appends any new types', (t) => {
     t.deepEqual(
-        extendDuckWith(createDuck({
+        extendDuck(createDuck({
             namespace: 'ns1',
             store: 'x',
             types: ['START']

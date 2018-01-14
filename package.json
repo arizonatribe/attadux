@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rimraf lib dist es coverage",
     "lint": "eslint src test build",
-    "test": "cross-env BABEL_ENV=commonjs babel-node test ",
+    "test": "cross-env BABEL_ENV=commonjs babel-node test | faucet",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
     "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/attadux.js",
