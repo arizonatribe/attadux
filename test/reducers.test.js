@@ -1,8 +1,8 @@
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('lets the original reducer reference the duck instance', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         types: ['FETCH'],
         reducer: (state, action, { types }) => {
             switch (action.type) {
@@ -22,7 +22,7 @@ test('lets the original reducer reference the duck instance', (t) => {
 })
 
 test('adds the new reducer keeping the old ones', (t) => {
-    const parentDuck = new Duck({
+    const parentDuck = createDuck({
         reducer: (state, action) => {
             switch (action.type) {
                 case 'FETCH':
@@ -32,7 +32,7 @@ test('adds the new reducer keeping the old ones', (t) => {
             }
         }
     })
-    const duck = parentDuck.extend({
+    const duck = extendDuck(parentDuck, {
         reducer: (state, action) => {
             switch (action.type) {
                 case 'FETCH':
@@ -51,7 +51,7 @@ test('adds the new reducer keeping the old ones', (t) => {
 })
 
 test('extending still allows the original duck reducer to behave as it did before', (t) => {
-    const parentDuck = new Duck({
+    const parentDuck = createDuck({
         reducer: (state, action) => {
             switch (action.type) {
                 case 'FETCH':
@@ -61,7 +61,7 @@ test('extending still allows the original duck reducer to behave as it did befor
             }
         }
     })
-    parentDuck.extend({
+    extendDuck(parentDuck, {
         reducer: (state, action) => {
             switch (action.type) {
                 case 'FETCH':

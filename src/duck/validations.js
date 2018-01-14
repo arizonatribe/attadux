@@ -1,23 +1,10 @@
-import formatUtil from 'format-util'
-import {
-    all,
-    compose,
-    curry,
-    equals,
-    filter,
-    keys,
-    map,
-    pick,
-    prop,
-    toPairs,
-    values
-} from 'ramda'
 import spected from 'spected'
+import formatUtil from 'format-util'
+import {all, compose, curry, equals, filter, keys, map, pick, prop, toPairs, values} from 'ramda'
 
 import {invalidStateMachineInputs} from '../machines'
-import {noDucks} from '../helpers/duck'
-import {isNotEmpty, isDux} from '../helpers/is'
-import {duckMiddlewareRules, duxRules} from './rules'
+import {isNotEmpty} from '../util/is'
+import {duckMiddlewareRules, duxRules, isDux, noDucks} from './schema'
 import {pruneInvalidFields, pruneValidatedFields} from '../validators'
 
 /**

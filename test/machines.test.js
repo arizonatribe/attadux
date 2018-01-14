@@ -1,6 +1,6 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck} from '../src/duck'
 
 test('state machines:', (t) => {
     const namespace = 'attadux'
@@ -70,7 +70,7 @@ test('state machines:', (t) => {
     })
 
     t.test('...which transfers the \'machines\' prop to the duck instance', (nt) => {
-        const duck = new Duck({namespace, store, types, machines: {auth}})
+        const duck = createDuck({namespace, store, types, machines: {auth}})
         nt.deepEqual(
             duck.machines.auth,
             auth,
@@ -80,7 +80,7 @@ test('state machines:', (t) => {
     })
 
     t.test('...which can access the action types directly from the duck', (nt) => {
-        const duck = new Duck({namespace, store, types, machines})
+        const duck = createDuck({namespace, store, types, machines})
         nt.deepEqual(
             duck.machines.auth,
             auth,
@@ -90,7 +90,7 @@ test('state machines:', (t) => {
     })
 
     t.test('...excludes inputs from a machine state which do NOT match a redux action type', (nt) => {
-        const duck = new Duck({
+        const duck = createDuck({
             namespace,
             store,
             types,

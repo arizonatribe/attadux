@@ -1,6 +1,6 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import {createDuck, extendDuckWith} from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 import {createSelector, createDuckSelector} from '../src/selectors'
 
 test('lets the selectors compose themselves and reference the duck instance', (t) => {
@@ -105,7 +105,7 @@ test('extending updates the old selectors with the new properties', (t) => {
             items: state => state.items // gets the items from complete state
         }
     })
-    const childDuck = extendDuckWith(duck, {
+    const childDuck = extendDuck(duck, {
         namespace: 'b',
         store: 'y',
         selectors: {

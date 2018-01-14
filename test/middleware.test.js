@@ -1,10 +1,10 @@
 /* eslint "max-len": "off" */
 import {always, compose, omit, identity} from 'ramda'
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 import createMiddleware from '../src/validators/middleware'
-import {createRow} from '../src/helpers/duck'
-import {isStringieThingie} from '../src/helpers/is'
+import {createRow} from '../src/duck/creators'
+import {isStringieThingie} from '../src/util/is'
 import {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'
 
 test('middleware:', (ot) => {
@@ -73,11 +73,11 @@ test('middleware:', (ot) => {
 
     const stuffing = {types, reducer, store, creators, namespace, initialState, validators, machines}
     const row = createRow(
-        new Duck(stuffing),
-        new Duck({...stuffing, store: 'huey'}),
-        new Duck({...stuffing, store: 'dewey'}),
-        new Duck({...stuffing, store: 'louie'}),
-        new Duck({...omit('machines', stuffing), store: 'scrooge'})
+        createDuck(stuffing),
+        createDuck({...stuffing, store: 'huey'}),
+        createDuck({...stuffing, store: 'dewey'}),
+        createDuck({...stuffing, store: 'louie'}),
+        createDuck({...omit('machines', stuffing), store: 'scrooge'})
     )
     const middleware = createMiddleware(row)({getState: always(initialState)})(identity)
     const middlewareThenReducer = (duckName = store, muddleware = middleware, state) =>
@@ -100,7 +100,7 @@ test('middleware:', (ot) => {
 
     test('...whose machines can be extended', (t) => {
         const presentState = {user: {}, states: {tense: 'present'}}
-        const childDuck = row[store].extend({
+        const childDuck = extendDuck(row[store], {
             types: ['ED'],
             machines: {
                 tense: {
@@ -171,7 +171,7 @@ test('middleware:', (ot) => {
 
     test('...allows custom prop name for tracking machine states in the redux store', (t) => {
         const iniState = {user: {}, authStates: {tense: 'initial'}}
-        const duck = new Duck({
+        const duck = createDuck({
             stateMachinesPropName: 'authStates',
             namespace,
             store,
@@ -201,7 +201,7 @@ test('middleware:', (ot) => {
 
     test('...allows even custom prop names (for tracking machine states) that are nested paths (dot separated)', (t) => {
         const futureState = {user: {}, future: {pluperative: {tense: 'future'}}}
-        const duck = new Duck({
+        const duck = createDuck({
             stateMachinesPropName: 'future.pluperative',
             namespace,
             store,
@@ -232,7 +232,7 @@ test('middleware:', (ot) => {
 
     test('...allows custom prop names (for tracking machine states) that are an  array of string paths', (t) => {
         const pastState = {user: {}, future: {pluperative: {tense: 'past'}}}
-        const duck = new Duck({
+        const duck = createDuck({
             stateMachinesPropName: ['future', 'pluperative'],
             namespace,
             store,
@@ -262,7 +262,7 @@ test('middleware:', (ot) => {
     })
 
     test('...validates nested prop paths which are invalid and ensures machine states are still tracked in the store', (t) => {
-        const duck = new Duck({
+        const duck = createDuck({
             stateMachinesPropName: [{}, [], null],
             namespace,
             store,
@@ -292,7 +292,7 @@ test('middleware:', (ot) => {
     })
 
     test('...wont\'t move to an invalid state or invoke the reducer when in strict mode', (t) => {
-        const duck = new Duck({
+        const duck = createDuck({
             namespace,
             store,
             types,
@@ -316,7 +316,7 @@ test('middleware:', (ot) => {
     })
 
     test('...will prune invalid fields when in prune mode', (t) => {
-        const duck = new Duck({
+        const duck = createDuck({
             namespace,
             store,
             types,

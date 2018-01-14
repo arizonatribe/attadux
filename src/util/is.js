@@ -41,20 +41,6 @@ export const isPlainObj = compose(
 )
 
 /**
- * Checks to see if a given value is a Duck instance
- *
- * @func
- * @sig * -> Boolean
- * @param {*} val A value which may or may not be a Duck instance
- * @returns {Boolean} whether or not the object is an instance of a Duck
- */
-export const isDux = compose(
-    equals('Duck'),
-    path(['constructor', 'name']),
-    defaultTo({})
-)
-
-/**
  * Checks to make sure a given value isn't null or undefined
  *
  * @func

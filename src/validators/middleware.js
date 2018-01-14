@@ -1,7 +1,7 @@
 import {always, call, compose, converge, defaultTo, F, identity, ifElse, isNil, merge, objOf, prop, T} from 'ramda'
 import {isActionTypeInCurrentState, noMachines} from '../machines'
-import {getRowValidationErrors} from '../schema'
-import {createDuckLookup} from '../helpers/duck'
+import {getRowValidationErrors} from '../duck/validations'
+import {createDuckLookup} from '../duck/creators'
 import VALIDATION_LEVELS from './levels'
 
 export default (row) => {

@@ -1,9 +1,10 @@
-import {always, compose, converge, mergeDeepRight, prop, tap, uncurryN} from 'ramda'
-import {duxDefaults} from './schema/rules'
-import log from '../test/util'
+import {always, compose, converge, mergeDeepRight, tap, uncurryN} from 'ramda'
+import {duxDefaults} from '../schema/rules'
+// import {extendDuckOptions} from '../helpers/duck'
+
+import log from '../../test/util'
 
 import {
-    createDuckExtender,
     createDuckValidators,
     createDuckMachines,
     createDuckInitialState,
@@ -12,17 +13,17 @@ import {
     createDuckReducers,
     createDuckMetadata,
     createValidationMiddlewareHelpers
-} from './functors'
+} from './creators'
 
 export const createDuck = compose(
     Object.freeze,
     // tap(log('after extender')),
-    createDuckExtender,
+    // createDuckExtender,
     // tap(log('after middleware')),
     createValidationMiddlewareHelpers,
     // tap(log('after reducers')),
     createDuckReducers,
-    // tap(log('after action creators')),
+    tap(log('after action creators')),
     createDuckActionCreators,
     // tap(log('after selectors')),
     createDuckSelectors,
@@ -32,14 +33,14 @@ export const createDuck = compose(
     createDuckMachines,
     // tap(log('after validators')),
     createDuckValidators,
-    tap(log('after duck basic metadata')),
+    // tap(log('after duck basic metadata')),
     createDuckMetadata,
     // tap(log('after defaulting')),
     mergeDeepRight(duxDefaults)
 )
 
 export const extendDuck = converge(
-    compose, [always(createDuck), prop('extendOptions')]
+    compose, [always(createDuck), createDuckExtender]
 )
 
 export const extendDuckWith = uncurryN(2, extendDuck)

@@ -1,5 +1,5 @@
 import test from 'tape'
-import {createDuck} from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('lets the initialState reference the duck instance', (t) => {
     const duck = createDuck({
@@ -27,13 +27,13 @@ test('passes the initialState to the original reducer when state is undefined', 
 
 test('copies the initialState to the createDuck', (t) => {
     const duck = createDuck({initialState: {obj: null}})
-    t.deepEqual(duck.extend({}).initialState, {obj: null})
+    t.deepEqual(extendDuck(duck, {}).initialState, {obj: null})
     t.end()
 })
 
 test('passes the parent initialState to the child', (t) => {
     const parentDuck = createDuck({initialState: {parent: true}})
-    const duck = parentDuck.extend({
+    const duck = extendDuck(parentDuck, {
         initialState: (_, parentState) => ({
             ...parentState,
             child: true

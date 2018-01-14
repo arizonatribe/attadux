@@ -1,4 +1,5 @@
-import {always, identity, ifElse, is} from 'ramda'
+import {always, identity, ifElse, is, isNil, mergeDeepRight, type as getType} from 'ramda'
+import {isPlainObj, isPrimitiveish} from './is'
 
 /**
  * Takes a prop of any type and depending will wrap it in an array -
@@ -44,3 +45,33 @@ export const coerceToString = ifElse(is(String), identity, toString)
  * @returns {Objedt} The merged object of key/value pairs
  */
 export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj, [key]: val})
+
+/**
+ * A function which merges two Objects, with the latter merging over the former
+ * upon finding any duplicate fields. Also will return one or the other in full
+ * (un-merged) if one of the params is not an Object.
+ *
+ * @func
+ * @sig ({k: v}, {k: v}) -> *
+ * @param {Object} parent An Object whose props will have lower precedence when
+ * merged with another Object
+ * @param {Object} child An Object whose props will have higher precedence when
+ * merged with another Object
+ * @returns {*} the merged result of two values
+ */
+export const simpleMergeStrategy = (parent, child) => {
+    if (getType(parent) !== getType(child) || isNil(child)) {
+        if (is(Array, parent) && !isNil(child)) {
+            return [...parent, ...coerceToArray(child)]
+        }
+        if (!isPlainObj(parent)) {
+            return parent
+        }
+    } else if (isPrimitiveish(child) || is(Function, child)) {
+        return child
+    } else if (is(Array, parent)) {
+        return [...parent, ...coerceToArray(child)]
+    }
+
+    return mergeDeepRight(parent, child)
+}
