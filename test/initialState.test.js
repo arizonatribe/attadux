@@ -1,8 +1,8 @@
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('lets the initialState reference the duck instance', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         consts: {statuses: ['NEW']},
         initialState: ({consts}) => ({status: consts.statuses.NEW})
     })
@@ -11,13 +11,13 @@ test('lets the initialState reference the duck instance', (t) => {
 })
 
 test('accepts the initialState as an object', (t) => {
-    const duck = new Duck({initialState: {obj: {}}})
+    const duck = createDuck({initialState: {obj: {}}})
     t.deepEqual(duck.initialState, {obj: {}})
     t.end()
 })
 
 test('passes the initialState to the original reducer when state is undefined', (t) => {
-    const duck = new Duck({
+    const duck = createDuck({
         initialState: {obj: {}},
         reducer: (state) => state
     })
@@ -25,15 +25,15 @@ test('passes the initialState to the original reducer when state is undefined', 
     t.end()
 })
 
-test('copies the initialState to the new Duck', (t) => {
-    const duck = new Duck({initialState: {obj: null}})
-    t.deepEqual(duck.extend({}).initialState, {obj: null})
+test('copies the initialState to the createDuck', (t) => {
+    const duck = createDuck({initialState: {obj: null}})
+    t.deepEqual(extendDuck(duck, {}).initialState, {obj: null})
     t.end()
 })
 
 test('passes the parent initialState to the child', (t) => {
-    const parentDuck = new Duck({initialState: {parent: true}})
-    const duck = parentDuck.extend({
+    const parentDuck = createDuck({initialState: {parent: true}})
+    const duck = extendDuck(parentDuck, {
         initialState: (_, parentState) => ({
             ...parentState,
             child: true

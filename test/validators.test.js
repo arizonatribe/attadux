@@ -1,7 +1,7 @@
 /* eslint "max-len": "off" */
 import test from 'tape'
-import Duck from '../src/Duck'
-import {isStringieThingie} from '../src/helpers/is'
+import {createDuck, extendDuck} from '../src/duck'
+import {isStringieThingie} from '../src/util/is'
 import {isOldEnough, isYoungEnough, isValidEmail, isLongerThan, isShorterThan} from './util'
 import VALIDATION_LEVELS from '../src/validators/levels'
 
@@ -49,7 +49,7 @@ test('validators:', (t) => {
     }
 
     test('...which can be deeply nested', (nt) => {
-        const duck = new Duck({namespace, store, initialState, validators})
+        const duck = createDuck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', user: {age: 22, name: {first: 'John', last: 'Smith'}}}),
             {email: true, user: {age: true, name: {first: true, last: true}}},
@@ -59,7 +59,7 @@ test('validators:', (t) => {
     })
 
     test('...which always pass true for input props that have no corresponding validation rule', (nt) => {
-        const duck = new Duck({namespace, store, initialState, validators})
+        const duck = createDuck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', lorem: 'ipsum', dolor: 'sit amet'}),
             {email: true, lorem: true, dolor: true},
@@ -69,9 +69,9 @@ test('validators:', (t) => {
     })
 
     test('...which can be extended', (nt) => {
-        const duck = new Duck({namespace, store, initialState, validators})
+        const duck = createDuck({namespace, store, initialState, validators})
         nt.deepEqual(
-            duck.extend({
+            extendDuck(duck, {
                 validators: {
                     auth: {
                         email: [[val => /mycompany\.com$/.test(val), 'Only mycompany.com email addresses allowed']]
@@ -88,7 +88,7 @@ test('validators:', (t) => {
     })
 
     test('...which can also provide manual checking of action payload to the reducer', (nt) => {
-        const duck = new Duck({
+        const duck = createDuck({
             namespace,
             store,
             initialState,

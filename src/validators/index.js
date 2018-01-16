@@ -25,8 +25,7 @@ import {
     valuesIn
 } from 'ramda'
 
-import {isPlainObj} from '../helpers/is'
-import {coerceToString} from '../helpers/coerce'
+import {isPlainObj, coerceToString} from '../util'
 import VALIDATION_LEVELS from './levels'
 
 /**

@@ -1,29 +1,11 @@
-import formatUtil from 'format-util'
-import {
-    all,
-    compose,
-    curry,
-    equals,
-    evolve,
-    filter,
-    has,
-    keys,
-    identity,
-    map,
-    pick,
-    pickBy,
-    prop,
-    toPairs,
-    values
-} from 'ramda'
 import spected from 'spected'
+import formatUtil from 'format-util'
+import {all, compose, curry, equals, filter, keys, map, pick, prop, toPairs, values} from 'ramda'
 
-import {getStateMachinesPropPath, invalidStateMachineInputs} from '../machines'
-import {createConstants, createTypes} from '../types'
-import {noDucks} from '../helpers/duck'
-import {isNotEmpty, isDux} from '../helpers/is'
-import {duckMiddlewareRules, duxRules} from './rules'
-import {pruneInvalidFields, pruneValidatedFields, makeValidationLevel} from '../validators'
+import {invalidStateMachineInputs} from '../machines'
+import {isNotEmpty} from '../util/is'
+import {duckMiddlewareRules, duxRules, isDux, noDucks} from './schema'
+import {pruneInvalidFields, pruneValidatedFields} from '../validators'
 
 /**
  * A curried wrapper around [format-util](https://www.npmjs.com/package/format-util)
@@ -37,6 +19,35 @@ import {pruneInvalidFields, pruneValidatedFields, makeValidationLevel} from '../
  * @returns {String} A formatted message
  */
 const format = curry((description, message) => formatUtil(description, message))
+
+/**
+ * Validates all the configuration options for a new Duck, returning any
+ * validation errors and a filtered version of the config options (just those
+ * that passed validation).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} options All the configuration options to be passed into the duck constructor
+ * @returns {Object} An object containing the 'validationsResult'
+ * and 'validatedOptions' (which are just all the validated fields)
+ */
+export const createDuckSchemaValidator = (options = {}) => {
+    const optionsToValidate = pick(keys(duxRules), options)
+    const validationsResult = spected(duxRules, optionsToValidate)
+    const validatedOptions = pruneInvalidFields(optionsToValidate, validationsResult)
+    return {validationsResult, validatedOptions}
+}
+
+// export const createDuckSchemaValidator = compose(
+//     converge(merge, [
+//         compose(
+//             objOf('validatedOptions'),
+//             converge(pruneInvalidFields, [identity, spected(duxRules)])
+//         ),
+//         compose(objOf('validationsResult'), spected(duxRules))
+//     ]),
+//     pick(keys(duxRules))
+// )
 
 /**
  * For a row of ducks, retrieves any invalid inputs for each duck's state machines.
@@ -117,56 +128,4 @@ export const getRowValidationErrors = row => {
     }
 
     return null
-}
-
-/**
- * Validates all the configuration options for a new Duck, returning any
- * validation errors and a filtered version of the config options (just those
- * that passed validation).
- *
- * @func
- * @sig {k: v} -> {k: v}
- * @param {Object} options All the configuration options to be passed into the duck constructor
- * @returns {Object} An object containing the 'validationsResult'
- * and 'validatedOptions' (which are just all the validated fields)
- */
-export const createDuckSchemaValidator = (options = {}) => {
-    const optionsToValidate = pick(keys(duxRules), options)
-    const validationsResult = spected(duxRules, optionsToValidate)
-    const validatedOptions = pruneInvalidFields(optionsToValidate, validationsResult)
-    return {validationsResult, validatedOptions}
-}
-
-/**
- * Validates and applies the configuration options for a new Duck, also
- * performing final formatting for many of the duck's simpler props
- * (consts, types, validationLevel, namespace, store, etc.).
- *
- * @func
- * @sig {k: v} -> {k: v}
- * @param {Object} options All the configuration options to be passed into the duck constructor
- * @returns {Object} An object containing all the validated configuration options for the new Duck
- */
-export const validateAndSetValues = (options) => {
-    const {validationsResult, validatedOptions} = createDuckSchemaValidator(options)
-    const evolvers = {
-        namespace: identity,
-        store: identity,
-        validationLevel: makeValidationLevel,
-        stateMachinesPropName: getStateMachinesPropPath,
-        consts: createConstants,
-        types: createTypes(validatedOptions)
-    }
-    return {
-        stateMachinesPropName: ['states'],
-        ...evolve(evolvers, pick(keys(evolvers), validatedOptions)),
-        ...(pickBy(isNotEmpty, {invalidOptions: pruneValidatedFields(validationsResult)})),
-        options: validatedOptions
-    }
-}
-
-export function setProp(p, setter) {
-    if (has(p, this.options)) {
-        this[p] = setter.call(this)
-    }
 }

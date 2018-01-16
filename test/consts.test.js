@@ -1,53 +1,53 @@
 import test from 'tape'
-import Duck from '../src/Duck'
+import {createDuck, extendDuck} from '../src/duck'
 
 test('creates the constant objects', (t) => {
-    const duck = new Duck({consts: {statuses: ['READY', 'ERROR']}})
+    const duck = createDuck({consts: {statuses: ['READY', 'ERROR']}})
     t.deepEqual(duck.consts.statuses, {READY: 'READY', ERROR: 'ERROR'})
     t.end()
 })
 
 test('creates constants whose key and value are NOT the same', (t) => {
-    const duck = new Duck({consts: {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'}})
+    const duck = createDuck({consts: {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'}})
     t.deepEqual(duck.consts, {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'})
     t.end()
 })
 
 test('ignores constants whose values are objects', (t) => {
-    const duck = new Duck({consts: {names: {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'}}})
+    const duck = createDuck({consts: {names: {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'}}})
     t.equal(duck.consts.names, undefined)
     t.end()
 })
 
 test('creates constant whose value is a Date and cannot be overwritten', (t) => {
     const today = new Date()
-    const duck = new Duck({consts: {today}})
+    const duck = createDuck({consts: {today}})
     t.equal(duck.consts.today, today)
     t.end()
 })
 
 test('creates a constant whose value is a Regex', (t) => {
     const uppercase = new RegExp(/[A-Z]/)
-    const duck = new Duck({consts: {uppercase}})
+    const duck = createDuck({consts: {uppercase}})
     t.equal(duck.consts.uppercase, uppercase)
     t.ok(duck.consts.uppercase.test('ABC'), 'A regex constant works')
     t.end()
 })
 
 test('creates a constant whose value is a string', (t) => {
-    const duck = new Duck({consts: {name: 'David'}})
+    const duck = createDuck({consts: {name: 'David'}})
     t.equal(duck.consts.name, 'David')
     t.end()
 })
 
 test('creates a constant whose value is numeric', (t) => {
-    const duck = new Duck({consts: {year: 2017}})
+    const duck = createDuck({consts: {year: 2017}})
     t.equal(duck.consts.year, 2017)
     t.end()
 })
 
 test('creates a constant whose value is an array', (t) => {
-    const duck = new Duck({consts: {frameworks: ['backbone', 'ember', 'angular', 'react', 'vue']}})
+    const duck = createDuck({consts: {frameworks: ['backbone', 'ember', 'angular', 'react', 'vue']}})
     t.deepEqual(duck.consts.frameworks, {
         backbone: 'backbone',
         ember: 'ember',
@@ -59,7 +59,7 @@ test('creates a constant whose value is an array', (t) => {
 })
 
 test('converting an array of const values does not break when there are duplicates', (t) => {
-    const duck = new Duck({consts: {frameworks: ['backbone', 'ember', 'angular', 'react', 'react', 'vue']}})
+    const duck = createDuck({consts: {frameworks: ['backbone', 'ember', 'angular', 'react', 'react', 'vue']}})
     t.deepEqual(duck.consts.frameworks, {
         backbone: 'backbone',
         ember: 'ember',
@@ -71,7 +71,7 @@ test('converting an array of const values does not break when there are duplicat
 })
 
 test('cannot overwrite a constant', (t) => {
-    const duck = new Duck({consts: {
+    const duck = createDuck({consts: {
         today: new Date(),
         name: 'David',
         year: 2017,
@@ -102,16 +102,15 @@ test('cannot overwrite a constant', (t) => {
 })
 
 test('extending the duck also copies the original consts', (t) => {
-    const duck = new Duck({consts: {statuses: ['NEW']}})
-    t.deepEqual(duck.extend({}).consts.statuses, {NEW: 'NEW'})
+    const duck = createDuck({consts: {statuses: ['NEW']}})
+    const childDuck = extendDuck(duck, {})
+    t.deepEqual(childDuck.consts.statuses, {NEW: 'NEW'})
     t.end()
 })
 
 test('extending the duck merges new consts with those from the original duck', (t) => {
-    const duck = new Duck({consts: {statuses: ['READY']}})
-    t.deepEqual(
-        duck.extend({consts: {statuses: ['FAILED']}}).consts.statuses,
-        {READY: 'READY', FAILED: 'FAILED'}
-    )
+    const duck = createDuck({consts: {statuses: ['READY']}})
+    const childDuck = extendDuck(duck, {consts: {statuses: ['FAILED']}})
+    t.deepEqual(childDuck.consts.statuses, {READY: 'READY', FAILED: 'FAILED'})
     t.end()
 })
