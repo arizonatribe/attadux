@@ -1,6 +1,5 @@
 import {
     __,
-    allPass,
     always,
     ap,
     applySpec,
@@ -14,8 +13,6 @@ import {
     either,
     evolve,
     filter,
-    flip,
-    has,
     head,
     identity,
     ifElse,
@@ -44,7 +41,7 @@ import {deriveSelectors} from '../selectors'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
 import {coerceToFn, isNotEmpty, isNotBlankString} from '../util'
-import {createDuckSchemaValidator} from './validations'
+import {createDuckSchemaValidator} from './validate'
 import {
     createPayloadValidator,
     createPayloadValidationsLogger,
@@ -62,8 +59,8 @@ import {
  * @returns {Object} A single object composed of many ducks
  */
 export const createRow = compose(
-    reduce(flip(assoc('store')), {}),
-    filter(allPass([has('store'), has('namespace'), isDux])),
+    reduce((row, duck) => assoc(duck.store, duck, row), {}),
+    filter(isDux),
     unapply(identity)
 )
 
@@ -139,7 +136,10 @@ export const createDuckValidators = converge(mergeDeepRight, [
         compose(
             objOf('validators'),
             map(spected),
-            call(compose(coerceToFn, path(['options', 'validators'])))
+            converge(call, [
+                compose(coerceToFn, path(['options', 'validators'])),
+                identity
+            ])
         )
     )
 ])

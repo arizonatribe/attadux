@@ -9,7 +9,7 @@ import {
     createDuckReducer,
     createDuckMetadata,
     createValidationMiddlewareHelpers
-} from './creators'
+} from './create'
 import {createDuckExtender} from './extend'
 
 /**
