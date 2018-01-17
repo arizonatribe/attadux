@@ -2,6 +2,7 @@ import {
     __,
     always,
     any,
+    applyTo,
     both,
     compose,
     contains,
@@ -153,7 +154,7 @@ export const createPayloadValidationsLogger = (validators = {}) =>
         compose(
             ifElse(isEmpty, always(null), identity),
             pruneValidatedFields,
-            validate => validate(action),
+            applyTo(action),
             getValidatorForAction(validators)
         )(action)
 
@@ -168,11 +169,10 @@ export const createPayloadValidationsLogger = (validators = {}) =>
  * @param {Object} validations
  * @returns {Boolean}
  */
-export const anyValidationFailures = (validations = {}) =>
-    compose(
-        any(either(both(isPlainObj, anyValidationFailures), is(Array))),
-        valuesIn
-    )(validations)
+export const anyValidationFailures = (validations = {}) => compose(
+    any(either(both(isPlainObj, anyValidationFailures), is(Array))),
+    valuesIn
+)(validations)
 
 /**
  * Creates a function that will receive a dispatched action and apply a validator function that
@@ -189,6 +189,6 @@ export const createPayloadValidator = (validators = {}) =>
         compose(
             not,
             anyValidationFailures,
-            validate => validate(action),
+            applyTo(action),
             getValidatorForAction(validators)
         )(action)
