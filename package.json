@@ -43,7 +43,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "format-util": "1.0.3",
     "ramda": "0.25.0",
     "spected": "0.6.0"
   },

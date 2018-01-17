@@ -1,11 +1,52 @@
 import spected from 'spected'
-import formatUtil from 'format-util'
-import {all, compose, curry, equals, filter, keys, map, pick, prop, toPairs, values} from 'ramda'
+import {
+    all,
+    compose,
+    cond,
+    curry,
+    either,
+    equals,
+    filter,
+    identity,
+    is,
+    keys,
+    map,
+    match,
+    pick,
+    prop,
+    toPairs,
+    values,
+    zip
+} from 'ramda'
 
 import {invalidStateMachineInputs} from '../machines'
-import {isNotEmpty} from '../util/is'
+import {isNotEmpty, isStringieThingie, isPlainObj} from '../util/is'
 import {duckMiddlewareRules, duxRules, isDux, noDucks} from './schema'
 import {pruneInvalidFields, pruneValidatedFields} from '../validators'
+
+/**
+ * A port of [format-util](https://www.npmjs.com/package/format-util) but with
+ * support for %o in addition to %j, %s and %d.
+ *
+ * @param {String} pattern A string value representing the message with any
+ * placeholders marked by %s, %d, %j or %o
+ * @returns {String} A string formatted with the supplied values inserted
+ * (stringified) into its placeholders
+ */
+const utilFormat = (pattern, ...params) => (
+    isStringieThingie(pattern) && params.length ?
+        zip(
+            match(/(%?)(%([jods]))/g, pattern),
+            map(cond([
+                [either(is(Number), is(String)), identity],
+                [either(is(Array), isPlainObj), JSON.stringify]
+            ]))(params)
+        ).reduce(
+            (patt, [placeholder, value]) => patt.replace(placeholder, value),
+            pattern
+        ).replace(/%{2,2}/g, '%')
+        : pattern
+)
 
 /**
  * A curried wrapper around [format-util](https://www.npmjs.com/package/format-util)
@@ -18,7 +59,7 @@ import {pruneInvalidFields, pruneValidatedFields} from '../validators'
  * @param {String} message An value to plug into the description using formatting placeholders
  * @returns {String} A formatted message
  */
-const format = curry((description, message) => formatUtil(description, message))
+const format = curry((description, message) => utilFormat(description, message))
 
 /**
  * Validates all the configuration options for a new Duck, returning any
