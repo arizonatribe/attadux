@@ -29,6 +29,7 @@ import {
     pathSatisfies,
     pick,
     prop,
+    propEq,
     propSatisfies,
     reduce,
     split,
@@ -128,21 +129,30 @@ export const createDuckMetadata = compose(
  * @param {Object} duck A duck which (may) contain validators (inside of its 'options')
  * @returns {Object} A clone of the duck, but now with validators (if they were found inside of 'options').
  */
-export const createDuckValidators = converge(mergeDeepRight, [
-    identity,
+export const createDuckValidators = compose(
     ifElse(
-        pathSatisfies(isNil, ['options', 'validators']),
-        always({}),
-        compose(
-            objOf('validators'),
-            map(spected),
-            converge(call, [
-                compose(coerceToFn, path(['options', 'validators'])),
-                identity
-            ])
+        propEq('validationLevel', 'PRUNE'),
+        identity,
+        evolve({
+            validators: map(validator => compose(pruneValidatedFields, validator))
+        })
+    ),
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'validators']),
+            always({}),
+            compose(
+                objOf('validators'),
+                map(spected),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'validators'])),
+                    identity
+                ]),
+            )
         )
-    )
-])
+    ])
+)
 
 /**
  * Creates the Duck's state machines (if they are present inside of its 'options' prop).

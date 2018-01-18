@@ -52,7 +52,7 @@ test('validators:', (t) => {
         const duck = createDuck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', user: {age: 22, name: {first: 'John', last: 'Smith'}}}),
-            {email: true, user: {age: true, name: {first: true, last: true}}},
+            {},
             'verify that all the input fields passed validation'
         )
         nt.end()
@@ -62,7 +62,7 @@ test('validators:', (t) => {
         const duck = createDuck({namespace, store, initialState, validators})
         nt.deepEqual(
             duck.validators.auth({email: 'lorem.ipsum@email.com', lorem: 'ipsum', dolor: 'sit amet'}),
-            {email: true, lorem: true, dolor: true},
+            {},
             'verify that the valid \'email\' field and the other fields (which have no validators) are all true'
         )
         nt.end()
@@ -81,7 +81,7 @@ test('validators:', (t) => {
                 email: 'lorem.ipsum@email.org',
                 user: {age: 22, name: {first: 'John', last: 'Smith'}}
             }),
-            {email: ['Only mycompany.com email addresses allowed'], user: {age: true, name: {first: true, last: true}}},
+            {email: ['Only mycompany.com email addresses allowed']},
             'verify the email domain-specific extended rule catches the invalid domain'
         )
         nt.end()
