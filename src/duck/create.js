@@ -33,7 +33,9 @@ import {
     propSatisfies,
     reduce,
     split,
-    unapply
+    unapply,
+    unless,
+    when
 } from 'ramda'
 import spected from 'spected'
 import {createMachines, getDefaultStateForMachines} from '../machines'
@@ -111,7 +113,7 @@ export const createDuckMetadata = compose(
             prop('validatedOptions')
         ),
         compose(
-            ifElse(isNotEmpty, objOf('invalidOptions'), identity),
+            when(isNotEmpty, objOf('invalidOptions')),
             pruneValidatedFields,
             prop('validationsResult')
         ),
@@ -130,9 +132,8 @@ export const createDuckMetadata = compose(
  * @returns {Object} A clone of the duck, but now with validators (if they were found inside of 'options').
  */
 export const createDuckValidators = compose(
-    ifElse(
+    unless(
         propEq('validationLevel', 'PRUNE'),
-        identity,
         evolve({
             validators: map(validator => compose(pruneValidatedFields, validator))
         })

@@ -1,4 +1,4 @@
-import {always, identity, ifElse, is, isNil, mergeDeepRight, type as getType} from 'ramda'
+import {always, is, isNil, mergeDeepRight, type as getType, unless} from 'ramda'
 import {isPlainObj, isPrimitiveish} from './is'
 
 /**
@@ -10,7 +10,7 @@ import {isPlainObj, isPrimitiveish} from './is'
  * @param {Array|*} p A prop of any type (arrays will be returned as-is)
  * @returns {Array} either the original prop (if it was an array) or an Array wrapping the original prop
  */
-export const coerceToArray = ifElse(is(Array), identity, Array)
+export const coerceToArray = unless(is(Array), Array)
 
 /**
  * Takes a prop of any type and depending will [wrap a function around it](http://ramdajs.com/docs/#always) -
@@ -21,7 +21,7 @@ export const coerceToArray = ifElse(is(Array), identity, Array)
  * @param {Function|*} p A prop of any type (functions will be returned as-is)
  * @returns {Function} either the original prop (if it was a Function) or a Function wrapping the original prop
  */
-export const coerceToFn = ifElse(is(Function), identity, always)
+export const coerceToFn = unless(is(Function), always)
 
 /**
  * Converts a value of any type to [its string equivalent](http://ramdajs.com/docs/#toString),
@@ -32,7 +32,7 @@ export const coerceToFn = ifElse(is(Function), identity, always)
  * @param {*} s A value of any type (strings will be returned as-is)
  * @returns {String} either the original prop (if it was a String) or a stringified rendering of the original prop
  */
-export const coerceToString = ifElse(is(String), identity, toString)
+export const coerceToString = unless(is(String), toString)
 
 /**
  * Simplest of common reducer functions that merges an array of key/value pairs into a single object

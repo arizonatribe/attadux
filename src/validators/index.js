@@ -9,8 +9,6 @@ import {
     curry,
     defaultTo,
     either,
-    identity,
-    ifElse,
     is,
     isEmpty,
     keys,
@@ -23,7 +21,9 @@ import {
     toPairsIn,
     toUpper,
     trim,
-    valuesIn
+    unless,
+    valuesIn,
+    when
 } from 'ramda'
 
 import {isPlainObj, coerceToString} from '../util'
@@ -50,7 +50,7 @@ export const isValidationLevel = contains(__, keys(VALIDATION_LEVELS))
  * @returns {String} One of [STRICT, CANCEL, PRUNE, LOG]
  */
 export const makeValidationLevel = compose(
-    ifElse(isValidationLevel, identity, always('CANCEL')),
+    unless(isValidationLevel, always('CANCEL')),
     toUpper,
     trim,
     coerceToString
@@ -133,7 +133,7 @@ export const getValidatorForAction = validators => compose(
 export const createPayloadPruner = (validators = {}) =>
     (action = {}) =>
         compose(
-            ifElse(isEmpty, always(null), identity),
+            when(isEmpty, always(null)),
             pruneInvalidFields(action),
             validate => validate(action),
             getValidatorForAction(validators)
@@ -152,7 +152,7 @@ export const createPayloadPruner = (validators = {}) =>
 export const createPayloadValidationsLogger = (validators = {}) =>
     (action = {}) =>
         compose(
-            ifElse(isEmpty, always(null), identity),
+            when(isEmpty, always(null)),
             pruneValidatedFields,
             applyTo(action),
             getValidatorForAction(validators)
