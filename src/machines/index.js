@@ -18,7 +18,6 @@ import {
     flatten,
     has,
     head,
-    identity,
     ifElse,
     is,
     isEmpty,
@@ -35,8 +34,10 @@ import {
     split,
     toPairs,
     uniq,
+    unless,
     useWith,
-    values
+    values,
+    when
 } from 'ramda'
 
 import {
@@ -77,9 +78,8 @@ export const noMachines = anyPass([isNil, isEmpty])
 export const addTransitionsToState = curry(
     (state, {initialState = {}, stateMachinesPropName = ['states']}) =>
         compose(
-            ifElse(
+            unless(
                 hasNestedProp(stateMachinesPropName),
-                identity,
                 assocPath(stateMachinesPropName, {})
             ),
             defaultTo(initialState)
@@ -301,9 +301,9 @@ export const getStateMachinesPropPath = ifElse(
     allPass([is(String), contains('.'), isValidPropName]),
     split('.'),
     compose(
-        ifElse(isEmpty, ['states'], identity),
+        when(isEmpty, always(['states'])),
         filter(isNotBlankString),
-        ifElse(is(String), Array, identity)
+        when(is(String), Array)
     )
 )
 
@@ -363,7 +363,7 @@ export const getNextState = curry(
             reduce(listOfPairsToOneObject, {}),
             map(([name, machine]) => compose(
                 pair(name),
-                ifElse(isNotNil, identity, always(currentState[name])),
+                unless(isNotNil, always(currentState[name])),
                 prop(action.type),
                 defaultTo({}),
                 prop(currentState[name])

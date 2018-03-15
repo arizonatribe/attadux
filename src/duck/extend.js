@@ -28,7 +28,8 @@ import {
     prop,
     reduce,
     T,
-    uniq
+    uniq,
+    when
 } from 'ramda'
 import {makeExtendedReducer} from '../reducers'
 import {duxDefaults} from './schema'
@@ -149,7 +150,7 @@ export const createExtendedOptions = curry(
                 (mergedDuck, [key, builder]) => {
                     const option = compose(
                         objOf(key),
-                        ifElse(is(Function), applyTo(key), identity),
+                        when(is(Function), applyTo(key)),
                         builder
                     )(mergedDuck)
                     return [mergeDeepRight(mergedDuck, option), option]

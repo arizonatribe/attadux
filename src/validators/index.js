@@ -2,14 +2,13 @@ import {
     __,
     always,
     any,
+    applyTo,
     both,
     compose,
     contains,
     curry,
     defaultTo,
     either,
-    identity,
-    ifElse,
     is,
     isEmpty,
     keys,
@@ -22,7 +21,9 @@ import {
     toPairsIn,
     toUpper,
     trim,
-    valuesIn
+    unless,
+    valuesIn,
+    when
 } from 'ramda'
 
 import {isPlainObj, coerceToString} from '../util'
@@ -49,7 +50,7 @@ export const isValidationLevel = contains(__, keys(VALIDATION_LEVELS))
  * @returns {String} One of [STRICT, CANCEL, PRUNE, LOG]
  */
 export const makeValidationLevel = compose(
-    ifElse(isValidationLevel, identity, always('CANCEL')),
+    unless(isValidationLevel, always('CANCEL')),
     toUpper,
     trim,
     coerceToString
@@ -132,7 +133,7 @@ export const getValidatorForAction = validators => compose(
 export const createPayloadPruner = (validators = {}) =>
     (action = {}) =>
         compose(
-            ifElse(isEmpty, always(null), identity),
+            when(isEmpty, always(null)),
             pruneInvalidFields(action),
             validate => validate(action),
             getValidatorForAction(validators)
@@ -151,9 +152,9 @@ export const createPayloadPruner = (validators = {}) =>
 export const createPayloadValidationsLogger = (validators = {}) =>
     (action = {}) =>
         compose(
-            ifElse(isEmpty, always(null), identity),
+            when(isEmpty, always(null)),
             pruneValidatedFields,
-            validate => validate(action),
+            applyTo(action),
             getValidatorForAction(validators)
         )(action)
 
@@ -168,11 +169,10 @@ export const createPayloadValidationsLogger = (validators = {}) =>
  * @param {Object} validations
  * @returns {Boolean}
  */
-export const anyValidationFailures = (validations = {}) =>
-    compose(
-        any(either(both(isPlainObj, anyValidationFailures), is(Array))),
-        valuesIn
-    )(validations)
+export const anyValidationFailures = (validations = {}) => compose(
+    any(either(both(isPlainObj, anyValidationFailures), is(Array))),
+    valuesIn
+)(validations)
 
 /**
  * Creates a function that will receive a dispatched action and apply a validator function that
@@ -189,6 +189,6 @@ export const createPayloadValidator = (validators = {}) =>
         compose(
             not,
             anyValidationFailures,
-            validate => validate(action),
+            applyTo(action),
             getValidatorForAction(validators)
         )(action)

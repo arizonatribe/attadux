@@ -11,7 +11,9 @@ npm install attadux
 # Usage
 
 ```javascript
-const dux = new Duck({/* options */})
+import {createDuck} from 'attadux'
+
+const dux = createDuck({/* options */})
 ```
 
 ## Options
