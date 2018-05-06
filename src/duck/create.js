@@ -9,10 +9,12 @@ import {
     call,
     compose,
     converge,
+    curry,
     defaultTo,
     either,
     evolve,
     filter,
+    has,
     head,
     identity,
     ifElse,
@@ -37,6 +39,7 @@ import {
     unless,
     when
 } from 'ramda'
+import shape from 'shapey'
 import spected from 'spected'
 import {createMachines, getDefaultStateForMachines} from '../machines'
 import {createTransitionsPostReducer, createReducer} from '../reducers'
@@ -233,6 +236,36 @@ export const createDuckSelectors = converge(mergeDeepRight, [
                 compose(coerceToFn, path(['options', 'selectors'])),
                 identity
             ])
+        )
+    )
+])
+
+/**
+ * Creates the Duck's action enhancers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain action enhancers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with action enhancers (if they were found inside of 'options').
+ */
+export const createDuckActionEnhancers = converge(mergeDeepRight, [
+    identity,
+    ifElse(
+        pathSatisfies(isNil, ['options', 'enhancers']),
+        always({}),
+        compose(
+            objOf('enhancers'),
+            compose(
+                map(ifElse(
+                    has('type'),
+                    curry((spec, input) => compose(pick(keys(spec)), shape(spec))(input)),
+                    shape
+                )),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'enhancers'])),
+                    identity
+                ])
+            )
         )
     )
 ])

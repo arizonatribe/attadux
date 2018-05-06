@@ -1,12 +1,12 @@
 {
   "name": "attadux",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
   "main": "lib/index.js",
   "module": "es/index.js",
   "jsnext:main": "es/index.js",
   "scripts": {
-    "start": "nodemon test/index.js --watch src --quiet --exec 'clear && npm run test'",
+    "start": "nodemon test/index.js --watch src --watch test --quiet --exec 'clear && npm run test'",
     "clean": "rimraf dist es coverage",
     "lint": "eslint src test build",
     "test": "cross-env BABEL_ENV=commonjs babel-node test | faucet",
@@ -46,6 +46,7 @@
   "license": "MIT",
   "dependencies": {
     "ramda": "0.25.0",
+    "shapey": "1.0.2",
     "spected": "0.6.0"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import {
     createDuckInitialState,
     createDuckSelectors,
     createDuckActionCreators,
+    createDuckActionEnhancers,
     createDuckReducer,
     createDuckMetadata,
     createValidationMiddlewareHelpers
@@ -30,6 +31,7 @@ export const createDuck = compose(
     createDuckReducer,
     createValidationMiddlewareHelpers,
     createDuckActionCreators,
+    createDuckActionEnhancers,
     createDuckSelectors,
     createDuckInitialState,
     createDuckMachines,
