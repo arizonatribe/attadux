@@ -44,6 +44,7 @@ import spected from 'spected'
 import {createMachines, getDefaultStateForMachines} from '../machines'
 import {createTransitionsPostReducer, createReducer} from '../reducers'
 import {deriveSelectors} from '../selectors'
+import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
 import {coerceToFn, isNotEmpty, isNotBlankString} from '../util'
@@ -54,7 +55,6 @@ import {
     createPayloadPruner,
     pruneValidatedFields
 } from '../validators'
-
 
 /**
  * Merges multiple ducks into one flattened Object (row).
@@ -110,7 +110,7 @@ export const createDuckMetadata = compose(
         compose(objOf('stateMachinesPropName'), always(['states'])),
         compose(
             converge(mergeDeepRight, [
-                compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers))),
+                compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers)), copyRawQueriesToConsts),
                 compose(objOf('types'), converge(createTypes, [identity, prop('types')]))
             ]),
             prop('validatedOptions')
@@ -157,6 +157,24 @@ export const createDuckValidators = compose(
         )
     ])
 )
+
+/**
+ * Creates the Duck's queries (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain queries (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with queries (if they were found inside of 'options').
+ */
+export const createDuckQueries =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'queries']),
+            always({}),
+            compose(objOf('queries'), makeQueries)
+        )
+    ])
 
 /**
  * Creates the Duck's state machines (if they are present inside of its 'options' prop).

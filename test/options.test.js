@@ -11,6 +11,7 @@ test('default values for all options have not changed', (t) => {
             creators: {},
             machines: {},
             selectors: {},
+            queries: {},
             types: [],
             validators: {}
         },

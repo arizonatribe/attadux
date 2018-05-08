@@ -1,21 +1,26 @@
 import {
     allPass,
     always,
+    any,
     compose,
     curry,
+    either,
     filter,
     ifElse,
     is,
+    isEmpty,
+    isNil,
     map,
     not,
     prop,
     reduce,
+    reject,
     toPairs,
     values,
     zipObj
 } from 'ramda'
 
-import {isNotNil, isPrimitiveish, listOfPairsToOneObject, coerceToArray} from '../util'
+import {isPlainObj, isPrimitiveish, listOfPairsToOneObject, coerceToArray} from '../util'
 
 /**
  * Retrieves all a duck's namespaced types
@@ -62,7 +67,7 @@ export const createConstants = ifElse(
     compose(
         Object.freeze,
         reduce(listOfPairsToOneObject, {}),
-        filter(isNotNil),
+        reject(any(either(isNil, isEmpty))),
         map(([name, value]) => {
             if (is(Array, value)) {
                 /* Creates an object whose keys and values are identical */
@@ -72,10 +77,19 @@ export const createConstants = ifElse(
                         zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish))
                     )
                 ]
+            } else if (isPlainObj(value)) {
+                return [
+                    name,
+                    compose(
+                        ifElse(isEmpty, always(null), Object.freeze),
+                        filter(isPrimitiveish)
+                    )(value)
+                ]
             }
             return isPrimitiveish(value) ? [name, value] : null
         }),
-        toPairs
+        toPairs,
+        reject(isEmpty)
     ),
     always({})
 )

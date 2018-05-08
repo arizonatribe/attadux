@@ -1,6 +1,7 @@
 import {always, compose, converge, mergeDeepRight, uncurryN} from 'ramda'
 import {duxDefaults} from './schema'
 import {
+    createDuckQueries,
     createDuckValidators,
     createDuckMachines,
     createDuckInitialState,
@@ -36,6 +37,7 @@ export const createDuck = compose(
     createDuckInitialState,
     createDuckMachines,
     createDuckValidators,
+    createDuckQueries,
     createDuckMetadata,
     mergeDeepRight(duxDefaults)
 )
