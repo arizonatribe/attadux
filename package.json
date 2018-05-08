@@ -1,6 +1,6 @@
 {
   "name": "attadux",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",
@@ -11,6 +11,7 @@
     "lint": "eslint src test build",
     "test": "cross-env BABEL_ENV=commonjs babel-node test | faucet",
     "prebuild": "npm run prepare",
+    "prepublish": "npm run build",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir cjs",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
     "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/attadux.js",
