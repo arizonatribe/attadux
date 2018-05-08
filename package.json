@@ -1,6 +1,6 @@
 {
   "name": "attadux",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",
@@ -8,16 +8,15 @@
   "scripts": {
     "start": "nodemon test/index.js --watch src --watch test --quiet --exec 'clear && npm run test'",
     "clean": "rimraf dist es cjs coverage",
-    "lint": "eslint src test build",
+    "lint": "eslint src test",
     "test": "cross-env BABEL_ENV=commonjs babel-node test | faucet",
-    "prebuild": "npm run prepare",
-    "prepublish": "npm run build",
+    "prepublish": "npm run prepare",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir cjs",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
     "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/attadux.js",
     "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/attadux.min.js",
     "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
-    "prepare": "npm run clean && npm run lint && npm test"
+    "prepare": "npm run clean && npm run lint && npm test & npm run build"
   },
   "repository": {
     "type": "git",
