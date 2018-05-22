@@ -10,6 +10,7 @@ test('default values for all options have not changed', (t) => {
             consts: {},
             creators: {},
             machines: {},
+            workers: {},
             selectors: {},
             queries: {},
             types: [],

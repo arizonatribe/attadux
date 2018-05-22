@@ -44,6 +44,7 @@ import spected from 'spected'
 import {createMachines, getDefaultStateForMachines} from '../machines'
 import {createTransitionsPostReducer, createReducer} from '../reducers'
 import {deriveSelectors} from '../selectors'
+import {makeWorkers} from '../workers'
 import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
@@ -173,6 +174,24 @@ export const createDuckQueries =
             pathSatisfies(isNil, ['options', 'queries']),
             always({}),
             compose(objOf('queries'), makeQueries)
+        )
+    ])
+
+/**
+ * Creates the Duck's workers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain workers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with workers (if they were found inside of 'options').
+ */
+export const createDuckWorkers =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'workers']),
+            always({}),
+            compose(objOf('workers'), makeWorkers)
         )
     ])
 
