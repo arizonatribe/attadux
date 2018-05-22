@@ -1,6 +1,25 @@
-import {always, compose, is, nth, path, pipe, prop, propIs, propOr, split, unless} from 'ramda'
+import {
+    always,
+    call,
+    compose,
+    cond,
+    converge,
+    defaultTo,
+    identity,
+    ifElse,
+    is,
+    nth,
+    path,
+    pipe,
+    prop,
+    propIs,
+    propOr,
+    split,
+    unless
+} from 'ramda'
 import {getRowValidationErrors} from '../duck/validate'
 import {createDuckLookup} from '../duck/create'
+import {isPromise} from '../util'
 
 export const getStoreName = compose(nth(1), split('/'))
 
@@ -12,32 +31,48 @@ export default (row) => {
     }
 
     const getDuckMatchingAction = createDuckLookup(row)
+    const getDuckWorkers = pipe(getDuckMatchingAction, propOr({}, 'workers'))
+    const getWorkerName = ifElse(
+        path(['meta', 'worker']),
+        converge(unless(is(String)), [
+            pipe(prop('type'), always),
+            path(['meta', 'worker'])
+        ]),
+        always(null)
+    )
+    const getWorker = pipe(getWorkerName, prop)
+    const findActionWorker = converge(call, [getWorker, getDuckWorkers])
+    const makeWorkerTask = workerName => cond([
+        [is(Function), identity],
+        [propIs(Function, workerName), prop(workerName)],
+        [propIs(Function, 'run'), prop('run')]
+    ])
 
     return ({dispatch, getState}) => next => async action => {
-        if (path(['meta', 'worker'])(action)) {
-            const {workers = {}} = getDuckMatchingAction(action)
-            const getWorker = pipe(
-                path(['meta', 'worker']),
-                unless(is(String), always(action.type)),
-                propOr(Promise.resolve)
+        const workerName = getWorkerName(action)
+        if (workerName) {
+            const workerTask = pipe(
+                findActionWorker,
+                defaultTo({}),
+                makeWorkerTask(workerName)
             )(action)
-            const worker = getWorker(workers)
 
-            const storeName = getStoreName(action.type)
-            const message = {
-                action,
-                state: storeName ? getState()[storeName] : {}
-            }
+            if (is(Function, workerTask)) {
+                const storeName = getStoreName(action.type)
+                const message = {
+                    action,
+                    state: storeName ? getState()[storeName] : {}
+                }
+                const result = workerTask(message)
 
-            let result
-            if (is(Function, worker)) {
-                result = await worker(message)
-            } else if (propIs(Function, 'run', worker)) {
-                result = await worker.run(message)
-            }
-
-            if (prop('type', result)) {
-                dispatch(result)
+                if (isPromise(result)) {
+                    const asyncResult = await result
+                    if (prop('type', asyncResult)) {
+                        dispatch(asyncResult)
+                    }
+                } else if (prop('type', result)) {
+                    dispatch(result)
+                }
             }
         }
         return next(action)

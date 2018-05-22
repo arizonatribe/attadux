@@ -27,6 +27,20 @@ import {
 export const isValidPropName = test(/^(?:[A-Z])([A-Z0-9_\-.]+)([A-Z0-9])$/i)
 
 /**
+ * Checks to see if a given value is a JavaScript Promise
+ *
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value to check to see if is a Promise
+ * @returns {Boolean} whether or not the val is a Promise
+ */
+export const isPromise = compose(
+    equals('Promise'),
+    path(['constructor', 'name']),
+    defaultTo('')
+)
+
+/**
  * Checks to see if a given value is an Object
  *
  * @func
