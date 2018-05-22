@@ -1,14 +1,20 @@
 import {
+    always,
     call,
     compose,
+    cond,
     converge,
     identity,
+    invoker,
     is,
-    isNil,
     map,
     pathOr,
+    pipe,
     reject,
-    replace
+    replace,
+    T,
+    test as regTest,
+    unless
 } from 'ramda'
 import workerize from 'workerize'
 import {coerceToFn} from '../util'
@@ -22,25 +28,26 @@ const hasWorkers = (
 )
 /* eslint-enable no-undef */
 
+const makeWorkerString = cond([
+    [is(Function), invoker(0, 'toString')],
+    [is(String), identity],
+    [T, always('')]
+])
 
-const makeWorkerString = worker => {
-    if (is(Function, worker)) {
-        return `export ${worker.then ? 'async ' : ''}${worker.toString()}`
-    } else if (is(String, worker)) {
-        return compose(
-            replace(/^(\s*)const/m, 'export const'),
-            replace(/^(\s*)\(/m, 'export default ('),
-            replace(/^(\s*)function/m, 'export function'),
-            replace(/^(\s*)async\s+\(/m, 'export default async ('),
-            replace(/^(\s*)async\s+function/m, 'export async function')
-        )(worker)
-    }
-    return null
-}
+const makeExportable = pipe(
+    replace(/^(\s*)\(/m, 'export const run = ('),
+    replace(/^(\s*)const/m, 'export const'),
+    replace(/^(\s*)function\s+/m, 'export function '),
+    replace(/^(\s*)function\*\s+/m, 'export function* '),
+    replace(/^(\s*)function\s*\(/m, 'export function run('),
+    replace(/^(\s*)async\s+\(/m, 'export const run = async ('),
+    replace(/^(\s*)async\s+function\s*\(/m, 'export async function run(')
+)
 
-const makeWorker = compose(
-    str => workerize(`${str}`),
-    makeWorkerString
+const makeWorker = pipe(
+    makeWorkerString,
+    makeExportable,
+    unless(regTest(/^\s*$/), str => workerize(`${str}`))
 )
 
 export const getWorkers = converge(call, [
@@ -48,8 +55,8 @@ export const getWorkers = converge(call, [
     identity
 ])
 
-export const makeWorkers = compose(
-    reject(isNil),
-    map(hasWorkers ? makeWorker : makeWorkerString),
-    getWorkers
+export const makeWorkers = pipe(
+    getWorkers,
+    map(hasWorkers ? makeWorker : pipe(makeWorkerString, makeExportable)),
+    reject(regTest(/^\s*$/))
 )
