@@ -37,9 +37,9 @@ const makeWorkerString = cond([
 const makeExportable = pipe(
     replace(/^(\s*)\(/m, 'export const run = ('),
     replace(/^(\s*)const/m, 'export const'),
+    replace(/^(\s*)function\s*\(/m, 'export function run('),
     replace(/^(\s*)function\s+/m, 'export function '),
     replace(/^(\s*)function\*\s+/m, 'export function* '),
-    replace(/^(\s*)function\s*\(/m, 'export function run('),
     replace(/^(\s*)async\s+\(/m, 'export const run = async ('),
     replace(/^(\s*)async\s+function\s*\(/m, 'export async function run(')
 )
