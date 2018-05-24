@@ -48,7 +48,7 @@ export default (row) => {
         [propIs(Function, 'run'), prop('run')]
     ])
 
-    return ({dispatch, getState}) => next => async action => {
+    return ({dispatch, getState}) => next => action => {
         const workerName = getWorkerName(action)
         if (workerName) {
             const workerTask = pipe(
@@ -66,10 +66,11 @@ export default (row) => {
                 const result = workerTask(message)
 
                 if (isPromise(result)) {
-                    const asyncResult = await result
-                    if (prop('type', asyncResult)) {
-                        dispatch(asyncResult)
-                    }
+                    result.then(asyncResult => {
+                        if (prop('type', asyncResult)) {
+                            dispatch(asyncResult)
+                        }
+                    })
                 } else if (prop('type', result)) {
                     dispatch(result)
                 }
