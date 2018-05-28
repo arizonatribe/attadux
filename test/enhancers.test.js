@@ -210,5 +210,25 @@ test('enhancers can also be arrays of tranform functions', (t) => {
     t.end()
 })
 
-// test('enhancers can also be a single function', (t) => {
-// test('enhancers with arrays of tranform functions are executed in order')
+test('enhancers can also be a single, standard (not a shaping spec) function', (t) => {
+    const duck = createDuck({
+        types: ['FETCH_USERS', 'FIND_USER_REQUEST'],
+        creators: ({types}) => ({
+            fetchUser: id => ({id, type: types.FETCH_USERS})
+        }),
+        enhancers: ({types}) => ({
+            [types.FETCH_USERS]: action => ({
+                type: types.FIND_USER_REQUEST,
+                meta: {url: `http://localhost/api/users/${action.id}`, token: 'Bearer ey2dkjf02k30k101ksbbb'}
+            })
+        })
+    })
+    const action = duck.creators.fetchUser(13)
+    t.deepEqual(
+        duck.enhancers[action.type](action), {
+            type: duck.types.FIND_USER_REQUEST,
+            meta: {url: 'http://localhost/api/users/13', token: 'Bearer ey2dkjf02k30k101ksbbb'}
+        }
+    )
+    t.end()
+})
