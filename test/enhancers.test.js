@@ -32,6 +32,7 @@ test('basics of action enhancers', (t) => {
                 url: pipe(prop('endpoint'), concat(consts.baseUrl))
             },
             [types.FORMAT]: {
+                shapeyMode: 'strict',
                 type: types.NAME,
                 name: pipe(pick(['firstName', 'lastName']), values, join(' '))
             }
@@ -78,7 +79,7 @@ test('basics of action enhancers', (t) => {
             language: 'LATIN'
         }),
         {type: duck.types.NAME, name: 'Lorem Ipsum'},
-        'if you change types, no more merging onto the original: only the contents of the spec are processed'
+        'if you use a strict shaping function, only the fields from the spec are included'
     )
     t.end()
 })
@@ -175,3 +176,39 @@ test('extending merges new enhancers with those from the original duck', (t) => 
     )
     t.end()
 })
+
+test('enhancers can also be arrays of tranform functions', (t) => {
+    const duck = createDuck({
+        types: ['AVERAGE'],
+        creators: ({types}) => ({
+            computeAverage: (numbers = []) => ({numbers, type: types.AVERAGE})
+        }),
+        selectors: {
+            count: numbers => numbers.length,
+            sum: numbers => numbers.reduce((tot, num) => tot + num, 0),
+            average: (count, total) => (total / (count || 1))
+        },
+        enhancers: ({types, selectors}) => ({
+            [types.AVERAGE]: [
+                {count: pipe(prop('numbers'), selectors.count)},
+                {sum: pipe(prop('numbers'), selectors.sum)},
+                {average: converge(selectors.average, [prop('count'), prop('sum')])}
+            ]
+        })
+    })
+    const action = duck.creators.computeAverage([1, 4, 3, 7, 38, 2, 39, 27, 17, 104])
+    t.equal(typeof duck.enhancers[action.type], 'function', 'there is an enhancer whose name matches the action type')
+    t.deepEqual(
+        duck.enhancers[action.type](action), {
+            type: duck.types.AVERAGE,
+            sum: 242,
+            count: 10,
+            numbers: [1, 4, 3, 7, 38, 2, 39, 27, 17, 104],
+            average: 24.2
+        }
+    )
+    t.end()
+})
+
+// test('enhancers can also be a single function', (t) => {
+// test('enhancers with arrays of tranform functions are executed in order')

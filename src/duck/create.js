@@ -9,15 +9,14 @@ import {
     call,
     compose,
     converge,
-    curry,
     defaultTo,
     either,
     evolve,
     filter,
-    has,
     head,
     identity,
     ifElse,
+    is,
     isEmpty,
     isNil,
     keys,
@@ -39,8 +38,8 @@ import {
     unless,
     when
 } from 'ramda'
-import shape from 'shapey'
 import spected from 'spected'
+import {shapeline, makeShaper} from 'shapey'
 import {createMachines, getDefaultStateForMachines} from '../machines'
 import {createTransitionsPostReducer, createReducer} from '../reducers'
 import {deriveSelectors} from '../selectors'
@@ -278,6 +277,18 @@ export const createDuckSelectors = converge(mergeDeepRight, [
 ])
 
 /**
+ * Creates an Object of enhancement functions out of an Object of spec objects
+ * (or arrays of spec objects).
+ *
+ * @func
+ * @sig {k: [({k: v} -> {k: v}), ({k: v} -> {k: v}), ...]|({k: v} -> {k: v}) } -> {k: ({k: v} -> {k: v}) }
+ * @param {Object[]|Object} enhancements A single enhancement spec or an Array of enhancement specs
+ * @returns {Object} An object of enhancer functions, each ready to receive an
+ * input object and apply their single or chain of enhancer functions to it.
+ */
+export const makeEnhancers = ifElse(is(Array), shapeline, makeShaper)
+
+/**
  * Creates the Duck's action enhancers (if they are present inside of its 'options' prop).
  *
  * @func
@@ -292,17 +303,11 @@ export const createDuckActionEnhancers = converge(mergeDeepRight, [
         always({}),
         compose(
             objOf('enhancers'),
-            compose(
-                map(ifElse(
-                    has('type'),
-                    curry((spec, input) => compose(pick(keys(spec)), shape(spec))(input)),
-                    shape
-                )),
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'enhancers'])),
-                    identity
-                ])
-            )
+            map(makeEnhancers),
+            converge(call, [
+                compose(coerceToFn, path(['options', 'enhancers'])),
+                identity
+            ])
         )
     )
 ])
