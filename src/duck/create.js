@@ -323,11 +323,7 @@ export const createDuckActionEnhancers = converge(mergeDeepRight, [
  * @returns {Object} An object of multipler functions, each ready to receive an
  * input object and apply their single or many multipler functions to it.
  */
-export const makeMultipliers = compose(
-    juxt,
-    unless(is(Array), of),
-    ifElse(is(Array), map(makeShaper), makeShaper)
-)
+export const makeMultipliers = compose(juxt, map(makeShaper), unless(is(Array), of))
 
 /**
  * Creates the Duck's action multipliers (if they are present inside of its 'options' prop).
