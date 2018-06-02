@@ -19,6 +19,7 @@ import {
     is,
     isEmpty,
     isNil,
+    juxt,
     keys,
     map,
     mergeAll,
@@ -312,6 +313,45 @@ export const createDuckActionEnhancers = converge(mergeDeepRight, [
     )
 ])
 
+/**
+ * Creates an Object of multiplier functions out of an Object of spec objects
+ * (or arrays of spec objects).
+ *
+ * @func
+ * @sig {k: [({k: v} -> {k: v}), ({k: v} -> {k: v}), ...]|({k: v} -> {k: v}) } -> {k: ({k: v} -> {k: v}) }
+ * @param {Object[]|Object} multipliers A single multiplier spec or an Array of multipler specs
+ * @returns {Object} An object of multipler functions, each ready to receive an
+ * input object and apply their single or many multipler functions to it.
+ */
+export const makeMultipliers = compose(
+    juxt,
+    unless(is(Array), of),
+    ifElse(is(Array), map(makeShaper), makeShaper)
+)
+
+/**
+ * Creates the Duck's action multipliers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain action multipliers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with action multipliers (if they were found inside of 'options').
+ */
+export const createDuckActionMultipliers = converge(mergeDeepRight, [
+    identity,
+    ifElse(
+        pathSatisfies(isNil, ['options', 'multipliers']),
+        always({}),
+        compose(
+            objOf('multipliers'),
+            map(makeMultipliers),
+            converge(call, [
+                compose(coerceToFn, path(['options', 'multipliers'])),
+                identity
+            ])
+        )
+    )
+])
 /**
  * Creates the Duck's action creators (if they are present inside of its 'options' prop).
  *
