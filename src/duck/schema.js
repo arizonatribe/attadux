@@ -87,6 +87,7 @@ export const duxRules = {
     types: [[both(is(Array), all(is(String))), 'must be an object (or a function returning an object)']],
     validators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     enhancers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+    multipliers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     queries: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     workers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     reducer: [[is(Function), 'must be a function']],
