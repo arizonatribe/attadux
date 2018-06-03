@@ -20,7 +20,7 @@ export default (row) => {
         if (is(Function, fanout)) {
             const nextActions = fanout(action)
             if (is(Array, nextActions)) {
-                nextActions.forEach(nextAction => dispatch(nextAction))
+                nextActions.filter(na => na.type !== action.type).forEach(nextAction => dispatch(nextAction))
             }
         }
     }
