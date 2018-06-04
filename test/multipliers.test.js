@@ -56,18 +56,23 @@ const duck = createDuck({
               return state
         }
     },
-    multipliers: ({types, consts, selectors}) => ({
+    creators: ({types}) => ({
+        fetchOrderEnums: () => ({type: types.GET_ORDER_FORM_ENUMS}),
+        fetchOrderItemEnums: () => ({type: types.GET_ORDER_ITEM_FORM_ENUMS}),
+        fetchShippingEnums: () => ({type: types.GET_SHIPPING_FORM_ENUMS})
+    }),
+    multipliers: ({types, consts, selectors, creators}) => ({
         [types.POST_LOGIN]: [
-            types.GET_ORDER_FORM_ENUMS,
-            types.GET_ORDER_ITEM_FORM_ENUMS,
-            types.GET_SHIPPING_FORM_ENUMS
-        ].map(type => ({
-            type,
+            creators.fetchOrderEnums(),
+            creators.fetchOrderItemEnums(),
+            creators.fetchShippingEnums()
+        ].map(action => ({
+            ...action,
             config: ({token}) => ({
                 ...consts.metaDefaluts,
                 url: [
                     consts.metaDefaluts.baseUrl,
-                    selectors.getEntityName(type)
+                    selectors.getEntityName(action.type)
                 ].join('/'),
                 headers: {
                     ...consts.metaDefaluts.headers,
