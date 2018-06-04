@@ -1,6 +1,5 @@
-import {is} from 'ramda'
+import {compose, is, isNil, map, path, reject, values} from 'ramda'
 import {getRowValidationErrors} from '../duck/validate'
-import {createDuckLookup} from '../duck/create'
 
 export default (row) => {
     const validationErrors = getRowValidationErrors(row)
@@ -9,19 +8,17 @@ export default (row) => {
         throw new Error(validationErrors)
     }
 
-    const getDuckMatchingAction = createDuckLookup(row)
+    const multipliers = compose(values, reject(isNil), map(path(['multipliers'])))(row)
 
     return ({dispatch}) => next => action => {
         next(action)
 
-        const {multipliers = {}} = getDuckMatchingAction(action)
-        const fanout = multipliers[action.type]
-
-        if (is(Function, fanout)) {
+        multipliers.filter(multiplierMap => multiplierMap[action.type]).forEach(multiplierMap => {
+            const fanout = multiplierMap[action.type]
             const nextActions = fanout(action)
             if (is(Array, nextActions)) {
                 nextActions.filter(na => na.type !== action.type).forEach(nextAction => dispatch(nextAction))
             }
-        }
+        })
     }
 }
