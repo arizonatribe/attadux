@@ -13,12 +13,6 @@ test('creates constants whose key and value are NOT the same', (t) => {
     t.end()
 })
 
-test('ignores constants whose values are objects', (t) => {
-    const duck = createDuck({consts: {names: {BEST_JS_LIB: 'ramda', BEST_JS_FRAMEWORK: 'react'}}})
-    t.equal(duck.consts.names, undefined)
-    t.end()
-})
-
 test('creates constant whose value is a Date and cannot be overwritten', (t) => {
     const today = new Date()
     const duck = createDuck({consts: {today}})
@@ -112,5 +106,22 @@ test('extending the duck merges new consts with those from the original duck', (
     const duck = createDuck({consts: {statuses: ['READY']}})
     const childDuck = extendDuck(duck, {consts: {statuses: ['FAILED']}})
     t.deepEqual(childDuck.consts.statuses, {READY: 'READY', FAILED: 'FAILED'})
+    t.end()
+})
+
+test('string values (for queries) get copied to consts', (t) => {
+    const rawQuery = `
+        latin {
+            lorem
+            ipsum
+            dolor
+            sit
+            amet
+        }
+    `
+    const duck = createDuck({queries: {
+        USERS: [str => ({document: 'USERS', query: str}), rawQuery]
+    }})
+    t.deepEqual(duck.consts, {queries: {USERS: rawQuery}})
     t.end()
 })

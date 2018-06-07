@@ -183,7 +183,11 @@ export const createDuckExtender = duck => {
             ['machines', createOptionsExtender(childOptions)],
             ['creators', createOptionsExtender(childOptions)],
             ['selectors', createOptionsExtender(childOptions)],
-            ['validators', createOptionsExtender(childOptions)]
+            ['queries', createOptionsExtender(childOptions)],
+            ['enhancers', createOptionsExtender(childOptions)],
+            ['multipliers', createOptionsExtender(childOptions)],
+            ['validators', createOptionsExtender(childOptions)],
+            ['workers', createOptionsExtender(childOptions)]
         ]
         return createExtendedOptions(optionBuilders, duck, childOptions)
     }

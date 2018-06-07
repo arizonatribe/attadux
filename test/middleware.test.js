@@ -2,7 +2,7 @@
 import {always, compose, omit, identity} from 'ramda'
 import test from 'tape'
 import {createDuck, extendDuck} from '../src/duck'
-import createMiddleware from '../src/validators/middleware'
+import createValidatorMiddleware from '../src/middleware/validators'
 import {createRow} from '../src/duck/create'
 import {isStringieThingie} from '../src/util/is'
 import {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'
@@ -79,7 +79,7 @@ test('middleware:', (ot) => {
         createDuck({...stuffing, store: 'louie'}),
         createDuck({...omit('machines', stuffing), store: 'scrooge'})
     )
-    const middleware = createMiddleware(row)({getState: always(initialState)})(identity)
+    const middleware = createValidatorMiddleware(row)({getState: always(initialState)})(identity)
     const middlewareThenReducer = (duckName = store, muddleware = middleware, state) =>
         compose(
             a => row[duckName].reducer(state || row[duckName].initialState, a, row[duckName]),
@@ -117,7 +117,7 @@ test('middleware:', (ot) => {
                 }
             }
         })
-        const mdlware = createMiddleware({[store]: childDuck})({getState: always(presentState)})(identity)
+        const mdlware = createValidatorMiddleware({[store]: childDuck})({getState: always(presentState)})(identity)
 
         t.deepEqual(childDuck.machines.tense.present, {
             [`${namespace}/${store}/FREEZE`]: 'limbo',
@@ -181,7 +181,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: always(iniState)})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(iniState)})(identity)
 
         t.deepEqual(
             duck.initialState.authStates,
@@ -211,7 +211,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: always(futureState)})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(futureState)})(identity)
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -242,7 +242,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: always(pastState)})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(pastState)})(identity)
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -272,7 +272,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: always(duck.initialState)})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(duck.initialState)})(identity)
 
         t.deepEqual(
             duck.initialState,
@@ -302,7 +302,7 @@ test('middleware:', (ot) => {
             validators,
             validationLevel: 'STRICT'
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: () => initialState})(identity)
 
         t.deepEqual(
             mdlware({
@@ -326,7 +326,7 @@ test('middleware:', (ot) => {
             validators,
             validationLevel: 'PRUNE'
         })
-        const mdlware = createMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createValidatorMiddleware({[store]: duck})({getState: () => initialState})(identity)
 
         t.deepEqual(
             mdlware({

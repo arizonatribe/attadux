@@ -16,8 +16,10 @@ import {
     head,
     identity,
     ifElse,
+    is,
     isEmpty,
     isNil,
+    juxt,
     keys,
     map,
     mergeAll,
@@ -38,9 +40,12 @@ import {
     when
 } from 'ramda'
 import spected from 'spected'
+import {shapeline, makeShaper} from 'shapey'
 import {createMachines, getDefaultStateForMachines} from '../machines'
 import {createTransitionsPostReducer, createReducer} from '../reducers'
 import {deriveSelectors} from '../selectors'
+import {makeWorkers} from '../workers'
+import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
 import {coerceToFn, isNotEmpty, isNotBlankString} from '../util'
@@ -51,7 +56,6 @@ import {
     createPayloadPruner,
     pruneValidatedFields
 } from '../validators'
-
 
 /**
  * Merges multiple ducks into one flattened Object (row).
@@ -107,7 +111,7 @@ export const createDuckMetadata = compose(
         compose(objOf('stateMachinesPropName'), always(['states'])),
         compose(
             converge(mergeDeepRight, [
-                compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers))),
+                compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers)), copyRawQueriesToConsts),
                 compose(objOf('types'), converge(createTypes, [identity, prop('types')]))
             ]),
             prop('validatedOptions')
@@ -154,6 +158,42 @@ export const createDuckValidators = compose(
         )
     ])
 )
+
+/**
+ * Creates the Duck's queries (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain queries (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with queries (if they were found inside of 'options').
+ */
+export const createDuckQueries =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'queries']),
+            always({}),
+            compose(objOf('queries'), makeQueries)
+        )
+    ])
+
+/**
+ * Creates the Duck's workers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain workers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with workers (if they were found inside of 'options').
+ */
+export const createDuckWorkers =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'workers']),
+            always({}),
+            compose(objOf('workers'), makeWorkers)
+        )
+    ])
 
 /**
  * Creates the Duck's state machines (if they are present inside of its 'options' prop).
@@ -237,6 +277,77 @@ export const createDuckSelectors = converge(mergeDeepRight, [
     )
 ])
 
+/**
+ * Creates an Object of enhancement functions out of an Object of spec objects
+ * (or arrays of spec objects).
+ *
+ * @func
+ * @sig {k: [({k: v} -> {k: v}), ({k: v} -> {k: v}), ...]|({k: v} -> {k: v}) } -> {k: ({k: v} -> {k: v}) }
+ * @param {Object[]|Object} enhancements A single enhancement spec or an Array of enhancement specs
+ * @returns {Object} An object of enhancer functions, each ready to receive an
+ * input object and apply their single or chain of enhancer functions to it.
+ */
+export const makeEnhancers = ifElse(is(Array), shapeline, makeShaper)
+
+/**
+ * Creates the Duck's action enhancers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain action enhancers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with action enhancers (if they were found inside of 'options').
+ */
+export const createDuckActionEnhancers = converge(mergeDeepRight, [
+    identity,
+    ifElse(
+        pathSatisfies(isNil, ['options', 'enhancers']),
+        always({}),
+        compose(
+            objOf('enhancers'),
+            map(makeEnhancers),
+            converge(call, [
+                compose(coerceToFn, path(['options', 'enhancers'])),
+                identity
+            ])
+        )
+    )
+])
+
+/**
+ * Creates an Object of multiplier functions out of an Object of spec objects
+ * (or arrays of spec objects).
+ *
+ * @func
+ * @sig {k: [({k: v} -> {k: v}), ({k: v} -> {k: v}), ...]|({k: v} -> {k: v}) } -> {k: ({k: v} -> {k: v}) }
+ * @param {Object[]|Object} multipliers A single multiplier spec or an Array of multipler specs
+ * @returns {Object} An object of multipler functions, each ready to receive an
+ * input object and apply their single or many multipler functions to it.
+ */
+export const makeMultipliers = compose(juxt, map(makeShaper), unless(is(Array), of))
+
+/**
+ * Creates the Duck's action multipliers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain action multipliers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with action multipliers (if they were found inside of 'options').
+ */
+export const createDuckActionMultipliers = converge(mergeDeepRight, [
+    identity,
+    ifElse(
+        pathSatisfies(isNil, ['options', 'multipliers']),
+        always({}),
+        compose(
+            objOf('multipliers'),
+            map(makeMultipliers),
+            converge(call, [
+                compose(coerceToFn, path(['options', 'multipliers'])),
+                identity
+            ])
+        )
+    )
+])
 /**
  * Creates the Duck's action creators (if they are present inside of its 'options' prop).
  *

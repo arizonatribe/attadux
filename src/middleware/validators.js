@@ -17,7 +17,7 @@ import {
 import {isActionTypeInCurrentState, noMachines} from '../machines'
 import {getRowValidationErrors} from '../duck/validate'
 import {createDuckLookup} from '../duck/create'
-import VALIDATION_LEVELS from './levels'
+import VALIDATION_LEVELS from '../validators/levels'
 
 export default (row) => {
     const validationErrors = getRowValidationErrors(row)
