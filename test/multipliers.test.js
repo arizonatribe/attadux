@@ -24,6 +24,18 @@ const duck = createDuck({
         'GET_SHIPPING_FORM_ENUMS',
         'GET_SHIPPING_FORM_ENUMS_SUCCESS'
     ],
+    debouncing: [
+        [(action) => action.api === 'orders', 1000],
+        [9999],
+        [new RegExp(/_KEY_PRESS$/), 200]
+    ],
+    throttling: ({types}) => [
+        [types.POST_LOGIN, 5000],
+        [types.GET_ORDER_FORM_ENUMS, 'not a number'],
+        [types.GET_ORDER_ITEM_FORM_ENUMS, 5000, 'lorem ipsum'],
+        [9999, 9999],
+        [new RegExp(/_MESSAGE$/), 500]
+    ],
     initialState: {
         enums: {}
     },
@@ -246,5 +258,20 @@ test('multipliers can also be a single, standard (not a shaping spec) function',
             orderDescription: 'A collection of must-haves for the duck on the go'
         }]
     )
+    t.end()
+})
+
+test('throttling limiter', (t) => {
+    t.deepEqual(duck.throttling, [
+        [duck.types.POST_LOGIN, 5000],
+        [duck.types.GET_ORDER_ITEM_FORM_ENUMS, 5000],
+        [new RegExp(/_MESSAGE$/), 500]
+    ])
+    t.end()
+})
+
+test('debouncing limiter', (t) => {
+    t.deepEqual(duck.debouncing[1], [new RegExp(/_KEY_PRESS$/), 200])
+    t.equal(duck.debouncing[0][0]({api: 'orders'}), true)
     t.end()
 })

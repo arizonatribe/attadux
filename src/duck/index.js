@@ -1,6 +1,8 @@
 import {always, compose, converge, mergeDeepRight, uncurryN} from 'ramda'
 import {duxDefaults} from './schema'
 import {
+    createDuckThrottlers,
+    createDuckDebouncers,
     createDuckWorkers,
     createDuckQueries,
     createDuckValidators,
@@ -37,6 +39,8 @@ export const createDuck = compose(
     createDuckActionMultipliers,
     createDuckActionEnhancers,
     createDuckActionCreators,
+    createDuckDebouncers,
+    createDuckThrottlers,
     createDuckSelectors,
     createDuckInitialState,
     createDuckMachines,
