@@ -53,6 +53,7 @@ import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
 import {coerceToFn, isNotEmpty, isNotBlankString} from '../util'
 import {createDuckSchemaValidator} from './validate'
+import {defaultErrorHandler, defaultSuccessHandler, createEffectHandler} from '../effects'
 import {
     createPayloadValidator,
     createPayloadValidationsLogger,
@@ -161,6 +162,43 @@ export const createDuckValidators = compose(
         )
     ])
 )
+
+/**
+ * Creates the Duck's effect handlers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain effect handlers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with effect handlers (if they were found inside of 'options').
+ */
+export const createDuckEffects =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'effects']),
+            always([]),
+            compose(
+                objOf('effects'),
+                map(([
+                    pattern,
+                    effectHandler = identity,
+                    successHandler = defaultSuccessHandler,
+                    errorHandler = defaultErrorHandler
+                ]) => createEffectHandler(pattern, effectHandler, successHandler, errorHandler)),
+                filter(allPass([
+                    is(Array),
+                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+                    pathSatisfies(is(Function), [1]),
+                    pathSatisfies(either(isNil, is(Function)), [2]),
+                    pathSatisfies(either(isNil, is(Function)), [3])
+                ])),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'effects'])),
+                    identity
+                ])
+            )
+        )
+    ])
 
 /**
  * Creates the Duck's throttlers (if they are present inside of its 'options' prop).
