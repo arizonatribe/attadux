@@ -1,5 +1,6 @@
 import './options.test'
 import './helpers.test'
+import './effects.test'
 import './types.test'
 import './consts.test'
 import './creators.test'
