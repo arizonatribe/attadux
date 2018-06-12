@@ -1,7 +1,10 @@
 /* eslint "max-len": "off" */
-import test from 'tape'
-import {always, pathEq} from 'ramda'
+import test from 'tape-promise/tape'
+import {always, pathEq, pathOr} from 'ramda'
+import {createDuck} from '../src'
 import {createEffectHandler, defaultErrorHandler, defaultSuccessHandler, makePredicate} from '../src/effects'
+
+const users = [{id: 1, name: 'Harry Potter'}, {id: 2, name: 'Ron Weasley'}, {id: 3, name: 'Hermione Granger'}]
 
 test('"defaultErrorHandler"', (t) => {
     t.deepEqual(
@@ -23,7 +26,6 @@ test('"defaultErrorHandler"', (t) => {
 })
 
 test('"defaultSuccessHandler"', (t) => {
-    const users = [{id: 1, name: 'Harry Potter'}, {id: 2, name: 'Ron Weasley'}, {id: 3, name: 'Hermione Granger'}]
     t.deepEqual(
         defaultSuccessHandler('You\'re amazing; don\'t let it go to your head though.', {type: 'FETCH_USERS_REQUEST'}),
         {type: 'FETCH_USERS_SUCCESS', payload: 'You\'re amazing; don\'t let it go to your head though.'},
@@ -127,6 +129,104 @@ test('"createEffectHandler"', (t) => {
             }
         },
         'successfully applied effect'
+    )
+    t.end()
+})
+
+test('effects', async (t) => {
+    const mockFetch = () => Promise.resolve({users})
+    const duck = createDuck({
+        namespace: 'myApp',
+        store: 'users',
+        consts: {
+            metaDefaluts: {
+                method: 'get',
+                url: 'http://localhost/api',
+                headers: {'content-type': 'application/json'}
+            }
+        },
+        types: [
+            'FETCH_USER_REQUEST',
+            'FETCH_USER_ERROR',
+            'FETCH_USER_SUCCESS',
+            'FETCH_USERS_REQUEST',
+            'FETCH_USERS_ERROR',
+            'FETCH_USERS_SUCCESS'
+        ],
+        initialState: {
+            users: {}
+        },
+        effects: ({types}) => [
+            [/REQUEST$/i, ({meta}) => mockFetch(meta.url, meta)],
+            [types.FETCH_USERS_REQUEST, ({meta}) => mockFetch(meta.url, meta)],
+            [types.FETCH_USERS_REQUEST, ({meta}) => mockFetch(meta.url, meta), {
+                shapeyMode: 'strict',
+                results: pathOr([], ['users']),
+                type: types.FETCH_USERS_SUCCESS
+            }], [
+                types.FETCH_USER_REQUEST,
+                () => Promise.reject('You are not allowed to view that user'),
+                null,
+                (error, action) => ({
+                    error: String(error),
+                    id: action.id,
+                    type: types.FETCH_USER_ERROR
+                })
+            ],
+            [types.FETCH_USERS_REQUEST, ({meta}) => mockFetch(meta.url, meta), types.FETCH_USERS_SUCCESS, types.FETCH_USERS_ERROR]
+        ],
+        creators: ({types, consts}) => ({
+            fetchUsers: () => ({
+                type: types.FETCH_USERS_REQUEST,
+                meta: {
+                    ...consts.metaDefaluts,
+                    url: `${consts.metaDefaluts.url}/users`
+                }
+            }),
+            fetchUser: id => ({
+                id,
+                type: types.FETCH_USER_REQUEST,
+                meta: {
+                    ...consts.metaDefaluts,
+                    url: `${consts.metaDefaluts.url}/users/${id}`
+                }
+            })
+        })
+    })
+    t.deepEqual(
+        duck.effects[0]({type: duck.types.FETCH_USERS_REQUEST}),
+        {type: duck.types.FETCH_USERS_ERROR, error: 'TypeError: Cannot read property \'url\' of undefined'},
+        'catches an error'
+    )
+    const fetchResultByPattern = await duck.effects[0](duck.creators.fetchUsers())
+    t.deepEqual(
+        fetchResultByPattern,
+        {type: duck.types.FETCH_USERS_SUCCESS, users},
+        'simple regex pattern matching on action type (with default success/error handlers)'
+    )
+    const fetchResultByExactMatch = await duck.effects[1](duck.creators.fetchUsers())
+    t.deepEqual(
+        fetchResultByExactMatch,
+        {type: duck.types.FETCH_USERS_SUCCESS, users},
+        'exact string matching of action type (with default success/error handlers)'
+    )
+    const fetchResultWithCustomSuccessHandler = await duck.effects[2](duck.creators.fetchUsers())
+    t.deepEqual(
+        fetchResultWithCustomSuccessHandler,
+        {type: duck.types.FETCH_USERS_SUCCESS, results: users},
+        'overriding the default success handler with a spec mapping function'
+    )
+    const fetchResultWithCustomErrorHandler = await duck.effects[3](duck.creators.fetchUser(42))
+    t.deepEqual(
+        fetchResultWithCustomErrorHandler,
+        {type: duck.types.FETCH_USER_ERROR, error: 'You are not allowed to view that user', id: 42},
+        'overriding the default error handler with a custom function'
+    )
+    const fetchResultSimpleActionTypeResponses = await duck.effects[4](duck.creators.fetchUsers())
+    t.deepEqual(
+        fetchResultSimpleActionTypeResponses,
+        {type: duck.types.FETCH_USERS_SUCCESS, users},
+        'wickedly simply shorthand for success/error response handling'
     )
     t.end()
 })

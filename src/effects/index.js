@@ -6,19 +6,23 @@ import {
     curry,
     evolve,
     F,
+    identity,
+    ifElse,
     is,
     merge,
     objOf,
     pathEq,
     pathSatisfies,
     pick,
+    pipe,
     T,
     test,
     tryCatch,
     unless,
     when
 } from 'ramda'
-import {isPlainObj} from '../util/is'
+import {makeShaper} from 'shapey'
+import {isPlainObj, isPromise} from '../util/is'
 
 /**
  * A slightly opinionated way to handle successful effects and creating a new
@@ -110,6 +114,28 @@ export const makePredicate = cond([
 ])
 
 /**
+ * Creates a function that handles the effect result (either success or failure)
+ *
+ * @func
+ * @sig (a -> b) -> (a -> b) -> (a -> b)
+ * @param {Function} defaultHandler The fall through handler function to be used
+* in case the handler passed into this function is null/undefined
+* @param {String|Object|Function} handler The handler function or the
+* String/Object to be turned into a handler function (if String/Object, it will
+* be turned into a Shapey spec-mapping function)
+ * @returns {Function} A success OR error handler function to be applied after
+ * the effect is finished
+ */
+export const makeResponseHandler = curry(
+    (defaultHandler, handler) => cond([
+        [is(String), compose(makeShaper, objOf('type'))],
+        [isPlainObj, makeShaper],
+        [is(Function), identity],
+        [T, always(defaultHandler)]
+    ])(handler)
+)
+
+/**
  * Creates a robust effect handler from a predicate, an effect creating
  * function, as well as a success and error handler. This curried function can
  * then be applied safely to any Action that matches the predicate (if the
@@ -134,7 +160,14 @@ export const createEffectHandler = curry(
     (pattern, effectHandler, successHandler, errorHandler, action) => when(
         makePredicate(pattern),
         tryCatch(
-            compose(result => successHandler(result, action), effectHandler),
+            pipe(
+                effectHandler,
+                ifElse(
+                    isPromise,
+                    promise => promise.then(res => successHandler(res, action)).catch(err => errorHandler(err, action)),
+                    res => successHandler(res, action)
+                )
+            ),
             ex => errorHandler(ex, action)
         )
     )(action)
