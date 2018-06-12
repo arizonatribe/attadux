@@ -91,6 +91,12 @@ export const duxRules = {
     queries: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     workers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
     reducer: [[is(Function), 'must be a function']],
+    effects: [[either(both(is(Array), all(is(Array))), is(Function)),
+        'must be an array of key/value pairs (or a function returning an one)']],
+    throttling: [[either(both(is(Array), all(is(Array))), is(Function)),
+        'must be an array of key/value pairs (or a function returning an one)']],
+    debouncing: [[either(both(is(Array), all(is(Array))), is(Function)),
+        'must be an array of key/value pairs (or a function returning an one)']],
     initialState: [[
         anyPass([isPrimitiveish, isPlainObj, is(Function)]),
         'must be an object, a function returning an object, or a primitive value'
