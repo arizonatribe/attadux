@@ -1,6 +1,6 @@
 {
   "name": "attadux",
-  "version": "0.1.17",
+  "version": "0.1.19",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",
@@ -46,7 +46,7 @@
   "license": "MIT",
   "dependencies": {
     "ramda": "0.25.0",
-    "shapey": "1.0.5",
+    "shapey": "1.0.7",
     "spected": "0.6.0",
     "workerize": "0.1.7"
   },
@@ -99,6 +99,7 @@
     "rollup-plugin-replace": "2.0.0",
     "rollup-plugin-uglify": "2.0.1",
     "tape": "4.8.0",
+    "tape-promise": "3.0.0",
     "uglify-es": "3.3.9"
   },
   "prettier": {

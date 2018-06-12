@@ -186,6 +186,9 @@ export const createDuckExtender = duck => {
             ['queries', createOptionsExtender(childOptions)],
             ['enhancers', createOptionsExtender(childOptions)],
             ['multipliers', createOptionsExtender(childOptions)],
+            ['throttling', createOptionsExtender(childOptions)],
+            ['debouncing', createOptionsExtender(childOptions)],
+            ['effects', createOptionsExtender(childOptions)],
             ['validators', createOptionsExtender(childOptions)],
             ['workers', createOptionsExtender(childOptions)]
         ]

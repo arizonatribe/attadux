@@ -1,6 +1,8 @@
 import {
     __,
+    allPass,
     always,
+    anyPass,
     ap,
     applySpec,
     applyTo,
@@ -24,6 +26,7 @@ import {
     map,
     mergeAll,
     mergeDeepRight,
+    not,
     nth,
     objOf,
     of,
@@ -48,8 +51,9 @@ import {makeWorkers} from '../workers'
 import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
-import {coerceToFn, isNotEmpty, isNotBlankString} from '../util'
+import {coerceToFn, isPlainObj, isNotEmpty, isNotBlankString} from '../util'
 import {createDuckSchemaValidator} from './validate'
+import {makeResponseHandler, defaultErrorHandler, defaultSuccessHandler, createEffectHandler} from '../effects'
 import {
     createPayloadValidator,
     createPayloadValidationsLogger,
@@ -153,11 +157,110 @@ export const createDuckValidators = compose(
                 converge(call, [
                     compose(coerceToFn, path(['options', 'validators'])),
                     identity
-                ]),
+                ])
             )
         )
     ])
 )
+
+/**
+ * Creates the Duck's effect handlers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain effect handlers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with effect handlers (if they were found inside of 'options').
+ */
+export const createDuckEffects =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'effects']),
+            always([]),
+            compose(
+                objOf('effects'),
+                map(([pattern, effectHandler, successHandler, errorHandler]) =>
+                    createEffectHandler(
+                        pattern,
+                        effectHandler || identity,
+                        makeResponseHandler(defaultSuccessHandler, successHandler),
+                        makeResponseHandler(defaultErrorHandler, errorHandler)
+                    )
+                ),
+                filter(allPass([
+                    is(Array),
+                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+                    pathSatisfies(is(Function), [1]),
+                    pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [2]),
+                    pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [3])
+                ])),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'effects'])),
+                    identity
+                ])
+            )
+        )
+    ])
+
+/**
+ * Creates the Duck's throttlers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain throttlers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with throttlers (if they were found inside of 'options').
+ */
+export const createDuckThrottlers =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'throttling']),
+            always([]),
+            compose(
+                objOf('throttling'),
+                map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
+                filter(allPass([
+                    is(Array),
+                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+                    pathSatisfies(compose(not, isNaN, Number), [1])
+                ])),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'throttling'])),
+                    identity
+                ])
+            )
+        )
+    ])
+
+/**
+ * Creates the Duck's debouncers (if they are present inside of its 'options' prop).
+ *
+ * @func
+ * @sig {k: v} -> {k: v}
+ * @param {Object} duck A duck which (may) contain debouncers (inside of its 'options')
+ * @returns {Object} A clone of the duck, but now with debouncers (if they were found inside of 'options').
+ */
+export const createDuckDebouncers =
+    converge(mergeDeepRight, [
+        identity,
+        ifElse(
+            pathSatisfies(isNil, ['options', 'debouncing']),
+            always([]),
+            compose(
+                objOf('debouncing'),
+                map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
+                filter(allPass([
+                    is(Array),
+                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+                    pathSatisfies(compose(not, isNaN, Number), [1])
+                ])),
+                converge(call, [
+                    compose(coerceToFn, path(['options', 'debouncing'])),
+                    identity
+                ])
+            )
+        )
+    ])
 
 /**
  * Creates the Duck's queries (if they are present inside of its 'options' prop).
