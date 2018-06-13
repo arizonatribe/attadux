@@ -1,6 +1,6 @@
 {
   "name": "attadux",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, web workers, effect handling, action multipliers, action enhancers, action throttling/debouncing, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",
@@ -43,7 +43,7 @@
     "dux"
   ],
   "authors": [
-    "Andre Aizim Kelmanosn (pre-fork author) <akelmanson@gmail.com>",
+    "Andre Aizim Kelmanson (pre-fork author) <akelmanson@gmail.com>",
     "David Nunez <arizonatribe@gmail.com>"
   ],
   "license": "MIT",

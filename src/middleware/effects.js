@@ -19,20 +19,15 @@ export default (row) => {
     }
 
     const resultHandler = curry((dispatch, next, action, result) => {
-        if (path(['type'], result)) {
-            if (result.type !== action.type) {
-                dispatch(result)
-            } else {
-                next(result)
-            }
-        } else {
-            next(action)
+        if (path(['type'], result) && action.type !== result.type) {
+            dispatch(result)
         }
     })
 
     return ({dispatch}) => next => {
         const curriedResultHandler = resultHandler(dispatch, next)
         return action => {
+            next(action)
             const handleResult = curriedResultHandler(action)
             effects.forEach(effect => {
                 const result = effect(action)
