@@ -1,4 +1,4 @@
-import {compose, is, isNil, map, path, reject, values} from 'ramda'
+import {compose, is, isNil, map, path, reject, unnest, values} from 'ramda'
 import {getRowValidationErrors} from '../duck/validate'
 
 export default (row) => {
@@ -17,7 +17,9 @@ export default (row) => {
             const fanout = multiplierMap[action.type]
             const nextActions = fanout(action)
             if (is(Array, nextActions)) {
-                nextActions.filter(na => na.type !== action.type).forEach(nextAction => dispatch(nextAction))
+                unnest(nextActions)
+                    .filter(na => na.type && na.type !== action.type)
+                    .forEach(nextAction => dispatch(nextAction))
             }
         })
     }
