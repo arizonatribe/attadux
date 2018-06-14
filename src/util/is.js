@@ -1,6 +1,7 @@
 import {
     allPass,
     anyPass,
+    both,
     complement,
     compose,
     curry,
@@ -12,6 +13,7 @@ import {
     isNil,
     not,
     path,
+    pathSatisfies,
     test
 } from 'ramda'
 
@@ -107,6 +109,16 @@ export const isStringieThingie = allPass([
  * @returns {Boolean} whether or not a given value is "primitive-ish"
  */
 export const isPrimitiveish = anyPass([is(Boolean), is(Number), is(String), is(RegExp), is(Date)])
+
+/**
+ * Check that action is an object with a "type" prop that is a non-blank string
+ * 
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value which may or may not be a Redux action
+ * @returns {Boolean}
+ */
+export const isAction = both(isPlainObj, pathSatisfies(allPass([is(String), test(/\S/)]), ['type']))
 
 /**
  * Checks to see if a provided object has a given prop (path)

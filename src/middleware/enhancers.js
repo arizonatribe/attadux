@@ -1,28 +1,24 @@
-import {either, is, isNil, isEmpty} from 'ramda'
-import {getRowValidationErrors} from '../duck/validate'
-import {createDuckLookup} from '../duck/create'
+import {curry, is} from 'ramda'
+import {isAction} from '../util/is'
 
-export default (row) => {
-    const validationErrors = getRowValidationErrors(row)
-
-    if (validationErrors) {
-        throw new Error(validationErrors)
-    }
-
-    const getDuckMatchingAction = createDuckLookup(row)
-
-    return ({dispatch}) => next => action => {
+export default curry(
+    (logger, getDuckMatchingAction, dispatch, action) => {
         const {enhancers = {}} = getDuckMatchingAction(action)
         const enhance = enhancers[action.type]
-
-        if (!is(Function, enhance)) return next(action)
-
-        const nextAction = enhance(action)
-
-        if (either(isNil, isEmpty)(nextAction)) return next(action)
-
-        if (nextAction.type !== action.type) dispatch(nextAction)
-
-        return next(nextAction)
+        if (is(Function, enhance)) {
+            try {
+                const nextAction = enhance(action)
+                if (isAction(nextAction)) {
+                    if (nextAction.type !== action.type) {
+                        dispatch(nextAction)
+                    } else {
+                        return nextAction
+                    }
+                }
+            } catch (error) {
+                logger.error(`Unable to enhance action: "${action.type}"`, error)
+            }
+        }
+        return action
     }
-}
+)
