@@ -55,7 +55,7 @@ The middleware currently has one purpose, to validate any of the dispatched redu
 //store.js
 
 import {createStore, applyMiddleware} from 'redux'
-import {createValidatorMiddleware} from 'attadux'
+import createMiddleware from 'attadux'
 
 import initialState from './initialState'
 import reducers from './reducers'
@@ -64,7 +64,7 @@ import allDucks from './ducks'
 export default createStore(
     reducers,
     initialState,
-    applyMiddleware(createValidatorMiddleware(allDucks))
+    applyMiddleware(createMiddleware(allDucks))
 )
 ```
 

@@ -2,8 +2,7 @@ import {curry, is} from 'ramda'
 import {isAction} from '../util/is'
 
 export default curry(
-    (logger, getDuckMatchingAction, dispatch, action) => {
-        const {enhancers = {}} = getDuckMatchingAction(action)
+    (logger, dispatch, enhancers, action) => {
         const enhance = enhancers[action.type]
         if (is(Function, enhance)) {
             try {

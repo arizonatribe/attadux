@@ -1,6 +1,6 @@
 {
   "name": "attadux",
-  "version": "0.2.1",
+  "version": "0.2.0",
   "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, web workers, effect handling, action multipliers, action enhancers, action throttling/debouncing, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",

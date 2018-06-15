@@ -1,8 +1,10 @@
 import {
     compose,
     curry,
+    either,
     filter,
     has,
+    isEmpty,
     isNil,
     map,
     pathOr,
@@ -21,8 +23,9 @@ import {createDuckLookup} from '../duck/create'
 import {isAction} from '../util/is'
 import createLogger from '../util/log'
 
-const makePropSandwich = curry(
+const flattenList = curry(
     (duckPropName, row) => compose(
+        reject(either(isNil, isEmpty)),
         unnest,
         values,
         map(pathOr([], [duckPropName])),
@@ -41,15 +44,15 @@ export default (row, loggingEnabled = true) => {
 
     const getDuckMatchingAction = createDuckLookup(row)
 
-    const effects = makePropSandwich('effects', row)
-    const debouncing = makePropSandwich('debouncing', row)
-    const throttling = makePropSandwich('throttling', row)
-    const multipliers = compose(values, reject(isNil), map(pathOr({}, ['multipliers'])))(row)
+    const effects = flattenList('effects', row)
+    const debouncing = flattenList('debouncing', row)
+    const throttling = flattenList('throttling', row)
+    const multipliers = compose(values, reject(either(isNil, isEmpty)), map(pathOr({}, ['multipliers'])))(row)
 
+    const curriedEnhancers = createEnhancerMiddleware(logger)
     const curriedEffects = createEffectMiddleware(logger, effects)
     const limitAction = createLimiterMiddleware(throttling, debouncing)
     const curriedMultipliers = createMultiplierMiddleware(logger, multipliers)
-    const curriedEnhancers = createEnhancerMiddleware(logger, getDuckMatchingAction)
     const curriedValidators = createValidatorMiddleware(logger, getDuckMatchingAction)
 
     return ({dispatch, getState}) => {
@@ -59,15 +62,34 @@ export default (row, loggingEnabled = true) => {
         const handleAnyActionEffects = curriedEffects(dispatch)
         return next => action => {
             if (isAction(action)) {
-                limitAction(action).then((limitedAction) => {
-                    const validatedAction = validateAction(limitedAction)
-                    if (isAction(validatedAction)) {
-                        const {enhancers = {}} = getDuckMatchingAction(validatedAction)
-                        const enhancedAction = pipe(multiplyAction, enhanceAction(enhancers))(validatedAction)
-                        next(enhanceAction)
-                        handleAnyActionEffects(enhancedAction)
-                    }
-                }).catch(err => logger.error(`There was a problem throttling or debouncing: "${action.type}"`, err))
+                limitAction(action)
+                    .catch(err => logger.error(`There was a problem throttling or debouncing: "${action.type}"`, err))
+                    .then((limitedAction) => {
+                        const validatedAction = validateAction(limitedAction)
+                        return isAction(validatedAction) ? validatedAction : false
+                    })
+                    .catch(err => {
+                        logger.error(`There was a problem validating: "${action.type}"`, err)
+                        next(action)
+                    })
+                    .then(validatedAction => {
+                        if (validatedAction) {
+                            const {enhancers = {}} = getDuckMatchingAction(validatedAction)
+                            return pipe(multiplyAction, enhanceAction(enhancers))(validatedAction)
+                        }
+                        return false
+                    })
+                    .catch(err => {
+                        logger.error(`A multiplier and/or enhancer failed for: "${action.type}"`, err)
+                        next(action)
+                    })
+                    .then(enhancedAction => {
+                        if (isAction(enhancedAction)) {
+                            next(enhancedAction)
+                            handleAnyActionEffects(enhancedAction)
+                        }
+                    })
+                    .catch(err => logger.error(`There was a problem executing the effect for: "${action.type}"`, err))
             } else {
                 logger.error('Looks like something was dispatched that is not a valid action:', action)
             }

@@ -11,7 +11,7 @@ import {
     call,
     compose,
     converge,
-    defaultTo,
+    curry,
     either,
     evolve,
     filter,
@@ -51,7 +51,7 @@ import {makeWorkers} from '../workers'
 import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
-import {coerceToFn, isPlainObj, isNotEmpty, isNotBlankString} from '../util'
+import {coerceToFn, isPlainObj, isNotEmpty, isStringieThingie} from '../util'
 import {createDuckSchemaValidator} from './validate'
 import {makeResponseHandler, defaultErrorHandler, defaultSuccessHandler, createEffectHandler} from '../effects'
 import {
@@ -76,28 +76,25 @@ export const createRow = compose(
 )
 
 /**
- * A function which takes an Object of one or more ducks and creates a function that will
- * extract whichever duck corresponds to a dispatched redux action
+ * A function which takes an Object of one or more ducks and finds the duck
+ * which matches a (potentially) namespaced Redux action
  *
  * @func
- * @sig {k: v} -> ({k: v} -> {k: v})
+ * @sig {k: v} -> {k: v} -> {k: v}
  * @param {Object} row An Object containing one or more ducks
- * @returns {Function} A function will takes a dispatched action
- * (whose type must be formatted as "namespace/store/type")
- * and returns the corresponding duck
+ * @param {Object} action An dispatch Redux action (if belonging to this lib,
+ * should have a namespaced action type)
+ * @returns {Object} A single duck that corresponds to the dispatched action
+ * (defaults to an empty object if none found)
  */
-export const createDuckLookup = row =>
+export const createDuckLookup = curry((row, action) =>
     compose(
-        defaultTo({}),
-        ifElse(
-            isNotBlankString,
-            prop(__, filter(isDux, row)),
-            always({})
-        ),
-        either(nth(1), head),
-        split('/'),
-        prop('type')
-    )
+        unless(isPlainObj, always({})),
+        when(isStringieThingie, prop(__, filter(isDux, row))),
+        when(is(String), compose(either(nth(1), head), split('/'))),
+        path(['type'])
+    )(action)
+)
 
 /**
  * Validates and applies the configuration options for a new Duck, also
