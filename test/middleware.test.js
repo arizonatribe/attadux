@@ -1,13 +1,15 @@
 /* eslint "max-len": "off" */
-import {always, compose, omit, identity} from 'ramda'
+import {always, compose, omit} from 'ramda'
 import test from 'tape'
 import {createDuck, extendDuck} from '../src/duck'
 import createValidatorMiddleware from '../src/middleware/validators'
-import {createRow} from '../src/duck/create'
+import {createRow, createDuckLookup} from '../src/duck/create'
 import {isStringieThingie} from '../src/util/is'
 import {isOldEnough, isYoungEnough, isLongerThan, isShorterThan} from './util'
+import createLogger from '../src/util/log'
 
 test('middleware:', (ot) => {
+    const logger = createLogger()
     const namespace = 'attadux'
     const store = 'donald'
     const types = ['CREATE_USER', 'CLEAR', 'HERE', 'REWIND', 'FAST_FORWARD', 'FREEZE']
@@ -79,7 +81,8 @@ test('middleware:', (ot) => {
         createDuck({...stuffing, store: 'louie'}),
         createDuck({...omit('machines', stuffing), store: 'scrooge'})
     )
-    const middleware = createValidatorMiddleware(row)({getState: always(initialState)})(identity)
+    const getDuckMatchingAction = createDuckLookup(row)
+    const middleware = createValidatorMiddleware(logger, getDuckMatchingAction)(always(initialState))
     const middlewareThenReducer = (duckName = store, muddleware = middleware, state) =>
         compose(
             a => row[duckName].reducer(state || row[duckName].initialState, a, row[duckName]),
@@ -117,7 +120,7 @@ test('middleware:', (ot) => {
                 }
             }
         })
-        const mdlware = createValidatorMiddleware({[store]: childDuck})({getState: always(presentState)})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: childDuck}))(always(presentState))
 
         t.deepEqual(childDuck.machines.tense.present, {
             [`${namespace}/${store}/FREEZE`]: 'limbo',
@@ -181,7 +184,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(iniState)})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(always(iniState))
 
         t.deepEqual(
             duck.initialState.authStates,
@@ -211,7 +214,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(futureState)})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(always(futureState))
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -242,7 +245,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(pastState)})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(always(pastState))
 
         t.deepEqual(
             duck.initialState.future.pluperative,
@@ -272,7 +275,7 @@ test('middleware:', (ot) => {
             initialState,
             reducer
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: always(duck.initialState)})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(always(duck.initialState))
 
         t.deepEqual(
             duck.initialState,
@@ -302,7 +305,7 @@ test('middleware:', (ot) => {
             validators,
             validationLevel: 'STRICT'
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(() => initialState)
 
         t.deepEqual(
             mdlware({
@@ -326,7 +329,7 @@ test('middleware:', (ot) => {
             validators,
             validationLevel: 'PRUNE'
         })
-        const mdlware = createValidatorMiddleware({[store]: duck})({getState: () => initialState})(identity)
+        const mdlware = createValidatorMiddleware(logger, createDuckLookup({[store]: duck}))(() => initialState)
 
         t.deepEqual(
             mdlware({

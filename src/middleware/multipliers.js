@@ -1,26 +1,30 @@
-import {compose, is, isNil, map, path, reject, unnest, values} from 'ramda'
-import {getRowValidationErrors} from '../duck/validate'
+import {curry, is, unnest} from 'ramda'
+import {isAction} from '../util/is'
 
-export default (row) => {
-    const validationErrors = getRowValidationErrors(row)
-
-    if (validationErrors) {
-        throw new Error(validationErrors)
-    }
-
-    const multipliers = compose(values, reject(isNil), map(path(['multipliers'])))(row)
-
-    return ({dispatch}) => next => action => {
-        next(action)
-
+export default curry(
+    (logger, multipliers, dispatch, action) => {
         multipliers.filter(multiplierMap => multiplierMap[action.type]).forEach(multiplierMap => {
-            const fanout = multiplierMap[action.type]
-            const nextActions = fanout(action)
-            if (is(Array, nextActions)) {
-                unnest(nextActions)
-                    .filter(na => na.type && na.type !== action.type)
-                    .forEach(nextAction => dispatch(nextAction))
+            try {
+                const fanout = multiplierMap[action.type]
+                const nextActions = fanout(action)
+                if (is(Array, nextActions)) {
+                    unnest(nextActions)
+                        .filter(na => isAction(na) && na.type !== action.type)
+                        .forEach(nextAction => {
+                            try {
+                                dispatch(nextAction)
+                            } catch (err) {
+                                logger.error(
+                                    `Unable to dispatch action: "${nextAction.type}", multiplied from "${action.type}"`,
+                                    err
+                                )
+                            }
+                        })
+                }
+            } catch (error) {
+                logger.error(`Unable to multiply action: "${action.type}"`, error)
             }
         })
+        return action
     }
-}
+)
