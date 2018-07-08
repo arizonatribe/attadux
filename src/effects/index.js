@@ -1,25 +1,25 @@
 import {
-    __,
-    always,
-    compose,
-    cond,
-    curry,
-    evolve,
-    F,
-    identity,
-    ifElse,
-    is,
-    merge,
-    objOf,
-    pathEq,
-    pathSatisfies,
-    pick,
-    pipe,
-    T,
-    test,
-    tryCatch,
-    unless,
-    when
+  __,
+  always,
+  compose,
+  cond,
+  curry,
+  evolve,
+  F,
+  identity,
+  ifElse,
+  is,
+  merge,
+  objOf,
+  pathEq,
+  pathSatisfies,
+  pick,
+  pipe,
+  T,
+  test,
+  tryCatch,
+  unless,
+  when
 } from 'ramda'
 import {makeShaper} from 'shapey'
 import {isPlainObj, isPromise} from '../util/is'
@@ -46,16 +46,16 @@ import {isPlainObj, isPromise} from '../util/is'
  * object, in which case it will be merged onto this)
  */
 export const defaultSuccessHandler = curry((result, action) =>
-    compose(
-        merge(__, {...unless(isPlainObj, objOf('payload'))(result)}),
-        when(
-            pathSatisfies(is(String), ['type']),
-            compose(
-                evolve({type: t => `${t.replace(/_REQUEST$/i, '').replace(/_EFFECT$/i, '')}_SUCCESS`}),
-                pick(['type'])
-            )
-        )
-    )(action)
+  compose(
+    merge(__, {...unless(isPlainObj, objOf('payload'))(result)}),
+    when(
+      pathSatisfies(is(String), ['type']),
+      compose(
+        evolve({type: t => `${t.replace(/_REQUEST$/i, '').replace(/_EFFECT$/i, '')}_SUCCESS`}),
+        pick(['type'])
+      )
+    )
+  )(action)
 )
 
 /**
@@ -79,16 +79,16 @@ export const defaultSuccessHandler = curry((result, action) =>
  * caught when the effect was created
  */
 export const defaultErrorHandler = curry((error, action) =>
-    compose(
-        merge({error: unless(isPlainObj, String)(error)}),
-        when(
-            pathSatisfies(is(String), ['type']),
-            compose(
-                evolve({type: t => `${t.replace(/_REQUEST$/i, '').replace(/_EFFECT$/i, '')}_ERROR`}),
-                pick(['type'])
-            )
-        )
-    )(action)
+  compose(
+    merge({error: unless(isPlainObj, String)(error)}),
+    when(
+      pathSatisfies(is(String), ['type']),
+      compose(
+        evolve({type: t => `${t.replace(/_REQUEST$/i, '').replace(/_EFFECT$/i, '')}_ERROR`}),
+        pick(['type'])
+      )
+    )
+  )(action)
 )
 
 /**
@@ -107,10 +107,10 @@ export const defaultErrorHandler = curry((error, action) =>
  * (ideally, one containing a "type" property)
  */
 export const makePredicate = cond([
-    [is(String), pathEq(['type'])],
-    [is(RegExp), compose(pathSatisfies(__, ['type']), test)],
-    [is(Function), (fn) => compose(Boolean, fn)],
-    [T, always(F)]
+  [is(String), pathEq(['type'])],
+  [is(RegExp), compose(pathSatisfies(__, ['type']), test)],
+  [is(Function), (fn) => compose(Boolean, fn)],
+  [T, always(F)]
 ])
 
 /**
@@ -127,12 +127,12 @@ export const makePredicate = cond([
  * the effect is finished
  */
 export const makeResponseHandler = curry(
-    (defaultHandler, handler) => cond([
-        [is(String), compose(makeShaper, objOf('type'))],
-        [isPlainObj, makeShaper],
-        [is(Function), identity],
-        [T, always(defaultHandler)]
-    ])(handler)
+  (defaultHandler, handler) => cond([
+    [is(String), compose(makeShaper, objOf('type'))],
+    [isPlainObj, makeShaper],
+    [is(Function), identity],
+    [T, always(defaultHandler)]
+  ])(handler)
 )
 
 /**
@@ -157,18 +157,18 @@ export const makeResponseHandler = curry(
  * alternatively it's failure
  */
 export const createEffectHandler = curry(
-    (pattern, effectHandler, successHandler, errorHandler, action) => when(
-        makePredicate(pattern),
-        tryCatch(
-            pipe(
-                effectHandler,
-                ifElse(
-                    isPromise,
-                    promise => promise.then(res => successHandler(res, action)).catch(err => errorHandler(err, action)),
-                    res => successHandler(res, action)
-                )
-            ),
-            ex => errorHandler(ex, action)
+  (pattern, effectHandler, successHandler, errorHandler, action) => when(
+    makePredicate(pattern),
+    tryCatch(
+      pipe(
+        effectHandler,
+        ifElse(
+          isPromise,
+          promise => promise.then(res => successHandler(res, action)).catch(err => errorHandler(err, action)),
+          res => successHandler(res, action)
         )
-    )(action)
+      ),
+      ex => errorHandler(ex, action)
+    )
+  )(action)
 )

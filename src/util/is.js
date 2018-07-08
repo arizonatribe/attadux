@@ -1,20 +1,20 @@
 import {
-    allPass,
-    anyPass,
-    both,
-    complement,
-    compose,
-    curry,
-    defaultTo,
-    either,
-    equals,
-    is,
-    isEmpty,
-    isNil,
-    not,
-    path,
-    pathSatisfies,
-    test
+  allPass,
+  anyPass,
+  both,
+  complement,
+  compose,
+  curry,
+  defaultTo,
+  either,
+  equals,
+  is,
+  isEmpty,
+  isNil,
+  not,
+  path,
+  pathSatisfies,
+  test
 } from 'ramda'
 
 /**
@@ -37,9 +37,9 @@ export const isValidPropName = test(/^(?:[A-Z])([A-Z0-9_\-.]+)([A-Z0-9])$/i)
  * @returns {Boolean} whether or not the val is a Promise
  */
 export const isPromise = compose(
-    equals('Promise'),
-    path(['constructor', 'name']),
-    defaultTo('')
+  equals('Promise'),
+  path(['constructor', 'name']),
+  defaultTo('')
 )
 
 /**
@@ -51,9 +51,9 @@ export const isPromise = compose(
  * @returns {Boolean} whether or not the val is a plain old JS object
  */
 export const isPlainObj = compose(
-    equals('Object'),
-    path(['constructor', 'name']),
-    defaultTo('')
+  equals('Object'),
+  path(['constructor', 'name']),
+  defaultTo('')
 )
 
 /**
@@ -95,9 +95,9 @@ export const isNotBlankString = compose(not, test(/^\s*$/))
  * @returns {Boolean} whether or not a given value is a non-blank String
  */
 export const isStringieThingie = allPass([
-    isNotBlankString,
-    either(is(Number), is(String)),
-    isNotNil
+  isNotBlankString,
+  either(is(Number), is(String)),
+  isNotNil
 ])
 
 /**

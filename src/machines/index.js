@@ -1,55 +1,55 @@
 import {
-    __,
-    all,
-    allPass,
-    always,
-    any,
-    anyPass,
-    assocPath,
-    both,
-    compose,
-    contains,
-    converge,
-    curry,
-    defaultTo,
-    difference,
-    either,
-    filter,
-    flatten,
-    has,
-    head,
-    ifElse,
-    is,
-    isEmpty,
-    isNil,
-    map,
-    mergeDeepRight,
-    keys,
-    last,
-    pair,
-    path,
-    pick,
-    prop,
-    reduce,
-    split,
-    toPairs,
-    uniq,
-    unless,
-    useWith,
-    values,
-    when
+  __,
+  all,
+  allPass,
+  always,
+  any,
+  anyPass,
+  assocPath,
+  both,
+  compose,
+  contains,
+  converge,
+  curry,
+  defaultTo,
+  difference,
+  either,
+  filter,
+  flatten,
+  has,
+  head,
+  ifElse,
+  is,
+  isEmpty,
+  isNil,
+  map,
+  mergeDeepRight,
+  keys,
+  last,
+  pair,
+  path,
+  pick,
+  prop,
+  reduce,
+  split,
+  toPairs,
+  uniq,
+  unless,
+  useWith,
+  values,
+  when
 } from 'ramda'
 
 import {
-    coerceToString,
-    listOfPairsToOneObject,
-    coerceToArray,
-    hasNestedProp,
-    isStringieThingie,
-    isValidPropName,
-    isNotBlankString,
-    isNotNil,
-    isPlainObj
+  coerceToString,
+  listOfPairsToOneObject,
+  coerceToArray,
+  hasNestedProp,
+  isStringieThingie,
+  isValidPropName,
+  isNotBlankString,
+  isNotNil,
+  isPlainObj
 } from '../util'
 import {getTypes} from '../types'
 
@@ -76,14 +76,14 @@ export const noMachines = anyPass([isNil, isEmpty])
  * current state of all the state machines
  */
 export const addTransitionsToState = curry(
-    (state, {initialState = {}, stateMachinesPropName = ['states']}) =>
-        compose(
-            unless(
-                hasNestedProp(stateMachinesPropName),
-                assocPath(stateMachinesPropName, {})
-            ),
-            defaultTo(initialState)
-        )(state)
+  (state, {initialState = {}, stateMachinesPropName = ['states']}) =>
+    compose(
+      unless(
+        hasNestedProp(stateMachinesPropName),
+        assocPath(stateMachinesPropName, {})
+      ),
+      defaultTo(initialState)
+    )(state)
 )
 
 /**
@@ -97,11 +97,11 @@ export const addTransitionsToState = curry(
  * @returns {String[]} A list of unique state transitions for the provided machine
  */
 export const getTransitionsForMachine = compose(
-    uniq,
-    filter(isStringieThingie),
-    flatten,
-    map(values),
-    values
+  uniq,
+  filter(isStringieThingie),
+  flatten,
+  map(values),
+  values
 )
 
 /**
@@ -115,11 +115,11 @@ export const getTransitionsForMachine = compose(
  * @returns {String[]} A list of unique inputs to the provided state machine
  */
 export const getStateInputsForMachine = compose(
-    uniq,
-    filter(isStringieThingie),
-    flatten,
-    map(keys),
-    values
+  uniq,
+  filter(isStringieThingie),
+  flatten,
+  map(keys),
+  values
 )
 
 /**
@@ -133,11 +133,11 @@ export const getStateInputsForMachine = compose(
  * @returns {String[]} A list of unique inputs to all the state machines for the provided duck
  */
 export const getStateInputsForAllMachines = compose(
-    uniq,
-    flatten,
-    map(getStateInputsForMachine),
-    values,
-    prop('machines')
+  uniq,
+  flatten,
+  map(getStateInputsForMachine),
+  values,
+  prop('machines')
 )
 
 /**
@@ -175,14 +175,14 @@ export const areStateNamesStrings = compose(all(is(String)), keys)
  * @returns {Boolean} whether or not the inputs and transitions for the state machine are strings
  */
 export const areInputsAndTransitionsStrings = compose(
-    all(allPass([
-        isPlainObj,
-        either(isEmpty, compose(
-            all(all(is(String))),
-            toPairs
-        ))
-    ])),
-    values
+  all(allPass([
+    isPlainObj,
+    either(isEmpty, compose(
+      all(all(is(String))),
+      toPairs
+    ))
+  ])),
+  values
 )
 
 /**
@@ -220,12 +220,12 @@ export const isEachTransitionAmongMachineStates = useWith(difference, [getTransi
  * @returns {Boolean} whether or not the transition is possible from the current state
  */
 export const isTransitionPossible = curry((transitionName, currentState, machine) =>
-    compose(
-        has(coerceToString(transitionName)),
-        defaultTo({}),
-        path([coerceToString(currentState)]),
-        defaultTo({})
-    )(machine)
+  compose(
+    has(coerceToString(transitionName)),
+    defaultTo({}),
+    path([coerceToString(currentState)]),
+    defaultTo({})
+  )(machine)
 )
 
 /**
@@ -242,25 +242,25 @@ export const isTransitionPossible = curry((transitionName, currentState, machine
  * @returns {Object} a validated, immutable state machine
  */
 export const createMachineStates = curry((machine = {}, types = {}) =>
-    compose(
-        Object.freeze,
-        reduce(listOfPairsToOneObject, {}),
-        map(([state, transitions]) => ([
-            state,
-            pick(
-                compose(
-                    map(head),
-                    filter(compose(contains(__, values(types)), head)),
-                    filter(compose(has(__, machine), last)),
-                    filter(all(is(String))),
-                    toPairs
-                )(transitions),
-                transitions
-            )
-        ])),
-        filter(both(compose(is(String), head), compose(isPlainObj, last))),
-        toPairs
-    )(machine)
+  compose(
+    Object.freeze,
+    reduce(listOfPairsToOneObject, {}),
+    map(([state, transitions]) => ([
+      state,
+      pick(
+        compose(
+          map(head),
+          filter(compose(contains(__, values(types)), head)),
+          filter(compose(has(__, machine), last)),
+          filter(all(is(String))),
+          toPairs
+        )(transitions),
+        transitions
+      )
+    ])),
+    filter(both(compose(is(String), head), compose(isPlainObj, last))),
+    toPairs
+  )(machine)
 )
 
 /**
@@ -275,12 +275,12 @@ export const createMachineStates = curry((machine = {}, types = {}) =>
  * @returns {Object} an object of validated, immutable state machines
  */
 export const createMachines = curry((machines, duck) =>
-    compose(
-        Object.freeze,
-        reduce(listOfPairsToOneObject, {}),
-        map(([name, machine]) => ([name, createMachineStates(machine, duck.types)])),
-        toPairs
-    )(machines)
+  compose(
+    Object.freeze,
+    reduce(listOfPairsToOneObject, {}),
+    map(([name, machine]) => ([name, createMachineStates(machine, duck.types)])),
+    toPairs
+  )(machines)
 )
 
 /**
@@ -298,13 +298,13 @@ export const createMachines = curry((machines, duck) =>
  * prop where state machines current state is tracked in the redux store
  */
 export const getStateMachinesPropPath = ifElse(
-    allPass([is(String), contains('.'), isValidPropName]),
-    split('.'),
-    compose(
-        when(isEmpty, always(['states'])),
-        filter(isNotBlankString),
-        when(is(String), Array)
-    )
+  allPass([is(String), contains('.'), isValidPropName]),
+  split('.'),
+  compose(
+    when(isEmpty, always(['states'])),
+    filter(isNotBlankString),
+    when(is(String), Array)
+  )
 )
 
 /**
@@ -317,7 +317,7 @@ export const getStateMachinesPropPath = ifElse(
  * @returns {Object} a flattened object where the current state of each state machine will be tracked
  */
 export const getDefaultStateForMachines = (machines = {}) =>
-    reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, keys(machines || {}))
+  reduce((obj, key) => ({...obj, [key]: 'initial'}), {}, keys(machines || {}))
 
 /**
  * Retrieves the section of the redux store where the current state is being
@@ -335,12 +335,12 @@ export const getDefaultStateForMachines = (machines = {}) =>
  * machine (String) and its current state (String) as key/value pairs
  */
 export const getCurrentState = ({machines = {}, stateMachinesPropName} = {}) =>
-    compose(
-        mergeDeepRight(map(always('initial'), machines)),
-        pick(keys(machines)),
-        defaultTo({}),
-        path(coerceToArray(stateMachinesPropName))
-    )
+  compose(
+    mergeDeepRight(map(always('initial'), machines)),
+    pick(keys(machines)),
+    defaultTo({}),
+    path(coerceToArray(stateMachinesPropName))
+  )
 
 /**
  * Based on the current state of the machines (managed in the store itself) and
@@ -357,20 +357,20 @@ export const getCurrentState = ({machines = {}, stateMachinesPropName} = {}) =>
  * machine (String) and its current state (String) as key/value pairs
  */
 export const getNextState = curry(
-    (state, action, {machines = {}, stateMachinesPropName}) => {
-        const currentState = getCurrentState({machines, stateMachinesPropName})(state)
-        return compose(
-            reduce(listOfPairsToOneObject, {}),
-            map(([name, machine]) => compose(
-                pair(name),
-                unless(isNotNil, always(currentState[name])),
-                prop(action.type),
-                defaultTo({}),
-                prop(currentState[name])
-            )(machine)),
-            toPairs
-        )(machines)
-    }
+  (state, action, {machines = {}, stateMachinesPropName}) => {
+    const currentState = getCurrentState({machines, stateMachinesPropName})(state)
+    return compose(
+      reduce(listOfPairsToOneObject, {}),
+      map(([name, machine]) => compose(
+        pair(name),
+        unless(isNotNil, always(currentState[name])),
+        prop(action.type),
+        defaultTo({}),
+        prop(currentState[name])
+      )(machine)),
+      toPairs
+    )(machines)
+  }
 )
 
 /**
@@ -387,17 +387,17 @@ export const getNextState = curry(
  * value for the state machine(s) current state
  */
 export const isActionTypeInCurrentState = curry(
-    (state, action, {machines, stateMachinesPropName}) => {
-        const currentState = getCurrentState({machines, stateMachinesPropName})(state)
-        return compose(
-            any(([name, machine]) => compose(
-                isNotNil,
-                prop(action.type),
-                defaultTo({}),
-                prop(__, machine),
-                prop(name)
-            )(currentState)),
-            toPairs
-        )(machines)
-    }
+  (state, action, {machines, stateMachinesPropName}) => {
+    const currentState = getCurrentState({machines, stateMachinesPropName})(state)
+    return compose(
+      any(([name, machine]) => compose(
+        isNotNil,
+        prop(action.type),
+        defaultTo({}),
+        prop(__, machine),
+        prop(name)
+      )(currentState)),
+      toPairs
+    )(machines)
+  }
 )

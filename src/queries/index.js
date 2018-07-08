@@ -1,48 +1,48 @@
 import {
-    always,
-    assocPath,
-    call,
-    compose,
-    converge,
-    filter,
-    find,
-    identity,
-    ifElse,
-    is,
-    isNil,
-    map,
-    pathOr,
-    prop,
-    reject
+  always,
+  assocPath,
+  call,
+  compose,
+  converge,
+  filter,
+  find,
+  identity,
+  ifElse,
+  is,
+  isNil,
+  map,
+  pathOr,
+  prop,
+  reject
 } from 'ramda'
 import {coerceToFn} from '../util'
 
 const makeQuery = query => {
-    if (is(Array, query)) {
-        const buildQuery = find(is(Function), query) || identity
-        const raw = find(is(String), query) || ''
-        return buildQuery(raw)
-    } else if (is(String, query)) {
-        return query
-    }
-    return null
+  if (is(Array, query)) {
+    const buildQuery = find(is(Function), query) || identity
+    const raw = find(is(String), query) || ''
+    return buildQuery(raw)
+  } else if (is(String, query)) {
+    return query
+  }
+  return null
 }
 
 export const getQueries = converge(call, [
-    compose(coerceToFn, pathOr({}, ['options', 'queries'])),
-    identity
+  compose(coerceToFn, pathOr({}, ['options', 'queries'])),
+  identity
 ])
 
 export const makeQueries = compose(
-    reject(isNil),
-    map(makeQuery),
-    getQueries
+  reject(isNil),
+  map(makeQuery),
+  getQueries
 )
 
 export const getRawQueries = compose(
-    filter(is(String)),
-    map(ifElse(is(Array), find(is(String)), always(null))),
-    prop('queries')
+  filter(is(String)),
+  map(ifElse(is(Array), find(is(String)), always(null))),
+  prop('queries')
 )
 
 /**

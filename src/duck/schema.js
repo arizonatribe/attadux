@@ -1,32 +1,32 @@
 import {
-    all,
-    allPass,
-    anyPass,
-    both,
-    complement,
-    compose,
-    difference,
-    either,
-    equals,
-    filter,
-    identity,
-    is,
-    isEmpty,
-    keys,
-    last,
-    length,
-    map,
-    none,
-    split,
-    toPairs,
-    uniq,
-    values
+  all,
+  allPass,
+  anyPass,
+  both,
+  complement,
+  compose,
+  difference,
+  either,
+  equals,
+  filter,
+  identity,
+  is,
+  isEmpty,
+  keys,
+  last,
+  length,
+  map,
+  none,
+  split,
+  toPairs,
+  uniq,
+  values
 } from 'ramda'
 import {
-    areStateNamesStrings,
-    areInputsAndTransitionsStrings,
-    getStateMachinesPropPath,
-    isEachTransitionAmongMachineStates
+  areStateNamesStrings,
+  areInputsAndTransitionsStrings,
+  getStateMachinesPropPath,
+  isEachTransitionAmongMachineStates
 } from '../machines'
 import {createConstants} from '../types'
 import {isNotEmpty, isPrimitiveish, isPlainObj, isStringieThingie} from '../util/is'
@@ -40,11 +40,11 @@ import {isValidationLevel, makeValidationLevel} from '../validators'
  * will create a clone of the original object with the result of each evolver in place of the original value.
  */
 export const metadataEvolvers = {
-    namespace: identity,
-    store: identity,
-    validationLevel: makeValidationLevel,
-    stateMachinesPropName: getStateMachinesPropPath,
-    consts: createConstants
+  namespace: identity,
+  store: identity,
+  validationLevel: makeValidationLevel,
+  stateMachinesPropName: getStateMachinesPropPath,
+  consts: createConstants
 }
 
 /**
@@ -52,16 +52,16 @@ export const metadataEvolvers = {
  * even though the user may not explicitly supply a value for any of them.
  */
 export const duxDefaults = {
-    consts: {},
-    creators: {},
-    machines: {},
-    queries: {},
-    workers: {},
-    selectors: {},
-    stateMachinesPropName: 'states',
-    types: [],
-    validationLevel: 'CANCEL',
-    validators: {}
+  consts: {},
+  creators: {},
+  machines: {},
+  queries: {},
+  workers: {},
+  selectors: {},
+  stateMachinesPropName: 'states',
+  types: [],
+  validationLevel: 'CANCEL',
+  validators: {}
 }
 
 /**
@@ -73,34 +73,34 @@ export const duxDefaults = {
  * or an array of error messages for any value(s) that failed validation.
  */
 export const duxRules = {
-    validationLevel: [[isValidationLevel, 'must be: STRICT, CANCEL, PRUNE, or LOG. CANCEL is the default.']],
-    store: [[isStringieThingie, 'must be a (non-blank) string']],
-    namespace: [[isStringieThingie, 'must be a (non-blank) string']],
-    stateMachinesPropName: [[
-        either(isStringieThingie, both(is(Array), all(isStringieThingie))),
-        'must be a string (or array of strings)'
-    ]],
-    consts: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    creators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    machines: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    selectors: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    types: [[both(is(Array), all(is(String))), 'must be an object (or a function returning an object)']],
-    validators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    enhancers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    multipliers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    queries: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    workers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-    reducer: [[is(Function), 'must be a function']],
-    effects: [[either(both(is(Array), all(is(Array))), is(Function)),
-        'must be an array of key/value pairs (or a function returning an one)']],
-    throttling: [[either(both(is(Array), all(is(Array))), is(Function)),
-        'must be an array of key/value pairs (or a function returning an one)']],
-    debouncing: [[either(both(is(Array), all(is(Array))), is(Function)),
-        'must be an array of key/value pairs (or a function returning an one)']],
-    initialState: [[
-        anyPass([isPrimitiveish, isPlainObj, is(Function)]),
-        'must be an object, a function returning an object, or a primitive value'
-    ]]
+  validationLevel: [[isValidationLevel, 'must be: STRICT, CANCEL, PRUNE, or LOG. CANCEL is the default.']],
+  store: [[isStringieThingie, 'must be a (non-blank) string']],
+  namespace: [[isStringieThingie, 'must be a (non-blank) string']],
+  stateMachinesPropName: [[
+    either(isStringieThingie, both(is(Array), all(isStringieThingie))),
+    'must be a string (or array of strings)'
+  ]],
+  consts: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  creators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  machines: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  selectors: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  types: [[both(is(Array), all(is(String))), 'must be an object (or a function returning an object)']],
+  validators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  enhancers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  multipliers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  queries: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  workers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
+  reducer: [[is(Function), 'must be a function']],
+  effects: [[either(both(is(Array), all(is(Array))), is(Function)),
+    'must be an array of key/value pairs (or a function returning an one)']],
+  throttling: [[either(both(is(Array), all(is(Array))), is(Function)),
+    'must be an array of key/value pairs (or a function returning an one)']],
+  debouncing: [[either(both(is(Array), all(is(Array))), is(Function)),
+    'must be an array of key/value pairs (or a function returning an one)']],
+  initialState: [[
+    anyPass([isPrimitiveish, isPlainObj, is(Function)]),
+    'must be an object, a function returning an object, or a primitive value'
+  ]]
 }
 
 /**
@@ -115,29 +115,29 @@ export const duxRules = {
  * for validating a usable duck in the middleware function is less strict than those used to create a duck.
  */
 export const duckMiddlewareRules = {
-    store: [[isStringieThingie, 'must be a (non-blank) string']],
-    namespace: [[isStringieThingie, 'must be a (non-blank) string']],
-    types: [
-        [isPlainObj, 'must be an object'],
-        [compose(
-            all(compose(equals(1), length, uniq)),
-            map(([key, val]) => ([key, compose(last, split('/'))(val)])),
-            filter(all(is(String))),
-            toPairs
-        ), 'each key and value are identical']
+  store: [[isStringieThingie, 'must be a (non-blank) string']],
+  namespace: [[isStringieThingie, 'must be a (non-blank) string']],
+  types: [
+    [isPlainObj, 'must be an object'],
+    [compose(
+      all(compose(equals(1), length, uniq)),
+      map(([key, val]) => ([key, compose(last, split('/'))(val)])),
+      filter(all(is(String))),
+      toPairs
+    ), 'each key and value are identical']
+  ],
+  machines: [
+    [compose(all(isPlainObj), values), 'must be an object'],
+    [compose(all(isNotEmpty), values), 'must not be empty'],
+    [compose(all(allPass([areStateNamesStrings, areInputsAndTransitionsStrings])), values),
+      'each machine contains nested objects (states) whose inputs and transitions are strings'
     ],
-    machines: [
-        [compose(all(isPlainObj), values), 'must be an object'],
-        [compose(all(isNotEmpty), values), 'must not be empty'],
-        [compose(all(allPass([areStateNamesStrings, areInputsAndTransitionsStrings])), values),
-            'each machine contains nested objects (states) whose inputs and transitions are strings'
-        ],
-        [compose(all(isEachTransitionAmongMachineStates), values), 'each transition value must also be a state']
-    ],
-    stateMachinesPropName: [[
-        both(is(Array), all(isStringieThingie)),
-        'must be an array of strings (representing the path to the "current state" prop)'
-    ]]
+    [compose(all(isEachTransitionAmongMachineStates), values), 'each transition value must also be a state']
+  ],
+  stateMachinesPropName: [[
+    both(is(Array), all(isStringieThingie)),
+    'must be an array of strings (representing the path to the "current state" prop)'
+  ]]
 }
 
 /**
@@ -150,9 +150,9 @@ export const duckMiddlewareRules = {
  * @returns {Boolean} whether or not the object is an instance of a Duck
  */
 export const isDux = compose(
-    isEmpty,
-    difference(['store', 'namespace', 'validators', 'types']),
-    keys
+  isEmpty,
+  difference(['store', 'namespace', 'validators', 'types']),
+  keys
 )
 
 /**
@@ -164,7 +164,7 @@ export const isDux = compose(
  * @returns {Boolean} whether or not there are any ducks inside of a given Object
  */
 export const noDucks = anyPass([
-    complement(isPlainObj),
-    compose(isEmpty, keys),
-    compose(none(isDux), values)
+  complement(isPlainObj),
+  compose(isEmpty, keys),
+  compose(none(isDux), values)
 ])

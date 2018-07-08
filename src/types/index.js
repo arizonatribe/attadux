@@ -1,23 +1,23 @@
 import {
-    allPass,
-    always,
-    any,
-    compose,
-    curry,
-    either,
-    filter,
-    ifElse,
-    is,
-    isEmpty,
-    isNil,
-    map,
-    not,
-    prop,
-    reduce,
-    reject,
-    toPairs,
-    values,
-    zipObj
+  allPass,
+  always,
+  any,
+  compose,
+  curry,
+  either,
+  filter,
+  ifElse,
+  is,
+  isEmpty,
+  isNil,
+  map,
+  not,
+  prop,
+  reduce,
+  reject,
+  toPairs,
+  values,
+  zipObj
 } from 'ramda'
 
 import {isPlainObj, isPrimitiveish, listOfPairsToOneObject, coerceToArray} from '../util'
@@ -43,7 +43,7 @@ export const getTypes = compose(values, prop('types'))
  * @returns {Array|*} a merged list (if 'left' was an array, otherwise 'right')
  */
 export const concatOrReplace = (left, right) => (
-    is(Array, left) ?
+  is(Array, left) ?
     [...left, ...coerceToArray(right)] :
     right
 )
@@ -57,41 +57,41 @@ export const concatOrReplace = (left, right) => (
  * @returns {Object} A frozen Object with only the values which have been validated
  */
 export const createConstants = ifElse(
-    /* no nested functions or objects, just primitives or conversion of arrays
+  /* no nested functions or objects, just primitives or conversion of arrays
      * of primitives into simple objects whose keys and vals are the same */
-    allPass([
-        compose(not, isPrimitiveish),
-        compose(not, is(Array)),
-        is(Object)
-    ]),
-    compose(
-        Object.freeze,
-        reduce(listOfPairsToOneObject, {}),
-        reject(any(either(isNil, isEmpty))),
-        map(([name, value]) => {
-            if (is(Array, value)) {
-                /* Creates an object whose keys and values are identical */
-                return [
-                    name,
-                    Object.freeze(
-                        zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish))
-                    )
-                ]
-            } else if (isPlainObj(value)) {
-                return [
-                    name,
-                    compose(
-                        ifElse(isEmpty, always(null), Object.freeze),
-                        filter(isPrimitiveish)
-                    )(value)
-                ]
-            }
-            return isPrimitiveish(value) ? [name, value] : null
-        }),
-        toPairs,
-        reject(isEmpty)
-    ),
-    always({})
+  allPass([
+    compose(not, isPrimitiveish),
+    compose(not, is(Array)),
+    is(Object)
+  ]),
+  compose(
+    Object.freeze,
+    reduce(listOfPairsToOneObject, {}),
+    reject(any(either(isNil, isEmpty))),
+    map(([name, value]) => {
+      if (is(Array, value)) {
+        /* Creates an object whose keys and values are identical */
+        return [
+          name,
+          Object.freeze(
+            zipObj(value.filter(isPrimitiveish), value.filter(isPrimitiveish))
+          )
+        ]
+      } else if (isPlainObj(value)) {
+        return [
+          name,
+          compose(
+            ifElse(isEmpty, always(null), Object.freeze),
+            filter(isPrimitiveish)
+          )(value)
+        ]
+      }
+      return isPrimitiveish(value) ? [name, value] : null
+    }),
+    toPairs,
+    reject(isEmpty)
+  ),
+  always({})
 )
 
 /**
@@ -108,8 +108,8 @@ export const createConstants = ifElse(
  * but formatted as 'namespace/store/type'
  */
 export const createTypes = curry(
-    ({namespace, store}, types) => zipObj(
-        types,
-        types.map(type => `${namespace || ''}/${store || ''}/${type}`)
-    )
+  ({namespace, store}, types) => zipObj(
+    types,
+    types.map(type => `${namespace || ''}/${store || ''}/${type}`)
+  )
 )

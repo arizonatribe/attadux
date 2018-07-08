@@ -48,9 +48,9 @@ const log = curry((caption, message) => console.error(chalk`
  * @returns {*} The original value, unaltered
  */
 export const taplog = (message, predicate = identity) =>
-    converge(or, [
-        identity,
-        compose(tap(log(message)), predicate)
-    ])
+  converge(or, [
+    identity,
+    compose(tap(log(message)), predicate)
+  ])
 
 export default log

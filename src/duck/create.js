@@ -1,46 +1,46 @@
 import {
-    __,
-    allPass,
-    always,
-    anyPass,
-    ap,
-    applySpec,
-    applyTo,
-    assoc,
-    assocPath,
-    call,
-    compose,
-    converge,
-    curry,
-    either,
-    evolve,
-    filter,
-    head,
-    identity,
-    ifElse,
-    is,
-    isEmpty,
-    isNil,
-    juxt,
-    keys,
-    map,
-    mergeAll,
-    mergeDeepRight,
-    not,
-    nth,
-    objOf,
-    of,
-    path,
-    pathSatisfies,
-    pick,
-    prop,
-    propEq,
-    propSatisfies,
-    reduce,
-    split,
-    unapply,
-    unless,
-    when
+  __,
+  allPass,
+  always,
+  anyPass,
+  ap,
+  applySpec,
+  applyTo,
+  assoc,
+  assocPath,
+  call,
+  compose,
+  converge,
+  curry,
+  either,
+  evolve,
+  filter,
+  head,
+  identity,
+  ifElse,
+  is,
+  isEmpty,
+  isNil,
+  juxt,
+  keys,
+  map,
+  mergeAll,
+  mergeDeepRight,
+  not,
+  nth,
+  objOf,
+  of,
+  path,
+  pathSatisfies,
+  pick,
+  prop,
+  propEq,
+  propSatisfies,
+  reduce,
+  split,
+  unapply,
+  unless,
+  when
 } from 'ramda'
 import spected from 'spected'
 import {shapeline, makeShaper} from 'shapey'
@@ -55,10 +55,10 @@ import {coerceToFn, isPlainObj, isNotEmpty, isStringieThingie} from '../util'
 import {createDuckSchemaValidator} from './validate'
 import {makeResponseHandler, defaultErrorHandler, defaultSuccessHandler, createEffectHandler} from '../effects'
 import {
-    createPayloadValidator,
-    createPayloadValidationsLogger,
-    createPayloadPruner,
-    pruneValidatedFields
+  createPayloadValidator,
+  createPayloadValidationsLogger,
+  createPayloadPruner,
+  pruneValidatedFields
 } from '../validators'
 
 /**
@@ -70,9 +70,9 @@ import {
  * @returns {Object} A single object composed of many ducks
  */
 export const createRow = compose(
-    reduce((row, duck) => assoc(duck.store, duck, row), {}),
-    filter(isDux),
-    unapply(identity)
+  reduce((row, duck) => assoc(duck.store, duck, row), {}),
+  filter(isDux),
+  unapply(identity)
 )
 
 /**
@@ -88,12 +88,12 @@ export const createRow = compose(
  * (defaults to an empty object if none found)
  */
 export const createDuckLookup = curry((row, action) =>
-    compose(
-        unless(isPlainObj, always({})),
-        when(isStringieThingie, prop(__, filter(isDux, row))),
-        when(is(String), compose(either(nth(1), head), split('/'))),
-        path(['type'])
-    )(action)
+  compose(
+    unless(isPlainObj, always({})),
+    when(isStringieThingie, prop(__, filter(isDux, row))),
+    when(is(String), compose(either(nth(1), head), split('/'))),
+    path(['type'])
+  )(action)
 )
 
 /**
@@ -107,25 +107,25 @@ export const createDuckLookup = curry((row, action) =>
  * @returns {Object} An object containing all the validated configuration options for the new Duck
  */
 export const createDuckMetadata = compose(
-    mergeAll,
-    ap([
-        compose(objOf('stateMachinesPropName'), always(['states'])),
-        compose(
-            converge(mergeDeepRight, [
-                compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers)), copyRawQueriesToConsts),
-                compose(objOf('types'), converge(createTypes, [identity, prop('types')]))
-            ]),
-            prop('validatedOptions')
-        ),
-        compose(
-            when(isNotEmpty, objOf('invalidOptions')),
-            pruneValidatedFields,
-            prop('validationsResult')
-        ),
-        compose(objOf('options'), prop('validatedOptions'))
-    ]),
-    of,
-    createDuckSchemaValidator
+  mergeAll,
+  ap([
+    compose(objOf('stateMachinesPropName'), always(['states'])),
+    compose(
+      converge(mergeDeepRight, [
+        compose(evolve(metadataEvolvers), pick(keys(metadataEvolvers)), copyRawQueriesToConsts),
+        compose(objOf('types'), converge(createTypes, [identity, prop('types')]))
+      ]),
+      prop('validatedOptions')
+    ),
+    compose(
+      when(isNotEmpty, objOf('invalidOptions')),
+      pruneValidatedFields,
+      prop('validationsResult')
+    ),
+    compose(objOf('options'), prop('validatedOptions'))
+  ]),
+  of,
+  createDuckSchemaValidator
 )
 
 /**
@@ -137,27 +137,27 @@ export const createDuckMetadata = compose(
  * @returns {Object} A clone of the duck, but now with validators (if they were found inside of 'options').
  */
 export const createDuckValidators = compose(
-    unless(
-        propEq('validationLevel', 'PRUNE'),
-        evolve({
-            validators: map(validator => compose(pruneValidatedFields, validator))
-        })
-    ),
-    converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'validators']),
-            always({}),
-            compose(
-                objOf('validators'),
-                map(spected),
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'validators'])),
-                    identity
-                ])
-            )
-        )
-    ])
+  unless(
+    propEq('validationLevel', 'PRUNE'),
+    evolve({
+      validators: map(validator => compose(pruneValidatedFields, validator))
+    })
+  ),
+  converge(mergeDeepRight, [
+    identity,
+    ifElse(
+      pathSatisfies(isNil, ['options', 'validators']),
+      always({}),
+      compose(
+        objOf('validators'),
+        map(spected),
+        converge(call, [
+          compose(coerceToFn, path(['options', 'validators'])),
+          identity
+        ])
+      )
+    )
+  ])
 )
 
 /**
@@ -170,33 +170,33 @@ export const createDuckValidators = compose(
  */
 export const createDuckEffects =
     converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'effects']),
-            always([]),
-            compose(
-                objOf('effects'),
-                map(([pattern, effectHandler, successHandler, errorHandler]) =>
-                    createEffectHandler(
-                        pattern,
-                        effectHandler || identity,
-                        makeResponseHandler(defaultSuccessHandler, successHandler),
-                        makeResponseHandler(defaultErrorHandler, errorHandler)
-                    )
-                ),
-                filter(allPass([
-                    is(Array),
-                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
-                    pathSatisfies(is(Function), [1]),
-                    pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [2]),
-                    pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [3])
-                ])),
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'effects'])),
-                    identity
-                ])
+      identity,
+      ifElse(
+        pathSatisfies(isNil, ['options', 'effects']),
+        always([]),
+        compose(
+          objOf('effects'),
+          map(([pattern, effectHandler, successHandler, errorHandler]) =>
+            createEffectHandler(
+              pattern,
+              effectHandler || identity,
+              makeResponseHandler(defaultSuccessHandler, successHandler),
+              makeResponseHandler(defaultErrorHandler, errorHandler)
             )
+          ),
+          filter(allPass([
+            is(Array),
+            pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+            pathSatisfies(is(Function), [1]),
+            pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [2]),
+            pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [3])
+          ])),
+          converge(call, [
+            compose(coerceToFn, path(['options', 'effects'])),
+            identity
+          ])
         )
+      )
     ])
 
 /**
@@ -209,24 +209,24 @@ export const createDuckEffects =
  */
 export const createDuckThrottlers =
     converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'throttling']),
-            always([]),
-            compose(
-                objOf('throttling'),
-                map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
-                filter(allPass([
-                    is(Array),
-                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
-                    pathSatisfies(compose(not, isNaN, Number), [1])
-                ])),
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'throttling'])),
-                    identity
-                ])
-            )
+      identity,
+      ifElse(
+        pathSatisfies(isNil, ['options', 'throttling']),
+        always([]),
+        compose(
+          objOf('throttling'),
+          map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
+          filter(allPass([
+            is(Array),
+            pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+            pathSatisfies(compose(not, isNaN, Number), [1])
+          ])),
+          converge(call, [
+            compose(coerceToFn, path(['options', 'throttling'])),
+            identity
+          ])
         )
+      )
     ])
 
 /**
@@ -239,24 +239,24 @@ export const createDuckThrottlers =
  */
 export const createDuckDebouncers =
     converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'debouncing']),
-            always([]),
-            compose(
-                objOf('debouncing'),
-                map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
-                filter(allPass([
-                    is(Array),
-                    pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
-                    pathSatisfies(compose(not, isNaN, Number), [1])
-                ])),
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'debouncing'])),
-                    identity
-                ])
-            )
+      identity,
+      ifElse(
+        pathSatisfies(isNil, ['options', 'debouncing']),
+        always([]),
+        compose(
+          objOf('debouncing'),
+          map(([pattern, milliseconds]) => ([pattern, Number(milliseconds)])),
+          filter(allPass([
+            is(Array),
+            pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
+            pathSatisfies(compose(not, isNaN, Number), [1])
+          ])),
+          converge(call, [
+            compose(coerceToFn, path(['options', 'debouncing'])),
+            identity
+          ])
         )
+      )
     ])
 
 /**
@@ -269,12 +269,12 @@ export const createDuckDebouncers =
  */
 export const createDuckQueries =
     converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'queries']),
-            always({}),
-            compose(objOf('queries'), makeQueries)
-        )
+      identity,
+      ifElse(
+        pathSatisfies(isNil, ['options', 'queries']),
+        always({}),
+        compose(objOf('queries'), makeQueries)
+      )
     ])
 
 /**
@@ -287,12 +287,12 @@ export const createDuckQueries =
  */
 export const createDuckWorkers =
     converge(mergeDeepRight, [
-        identity,
-        ifElse(
-            pathSatisfies(isNil, ['options', 'workers']),
-            always({}),
-            compose(objOf('workers'), makeWorkers)
-        )
+      identity,
+      ifElse(
+        pathSatisfies(isNil, ['options', 'workers']),
+        always({}),
+        compose(objOf('workers'), makeWorkers)
+      )
     ])
 
 /**
@@ -304,21 +304,21 @@ export const createDuckWorkers =
  * @returns {Object} A clone of the duck, but now with state machines (if they were found inside of 'options').
  */
 export const createDuckMachines = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        pathSatisfies(isNil, ['options', 'machines']),
-        always({}),
-        compose(
-            objOf('machines'),
-            converge(createMachines, [
-                converge(call, [
-                    compose(coerceToFn, path(['options', 'machines'])),
-                    identity
-                ]),
-                identity
-            ])
-        )
+  identity,
+  ifElse(
+    pathSatisfies(isNil, ['options', 'machines']),
+    always({}),
+    compose(
+      objOf('machines'),
+      converge(createMachines, [
+        converge(call, [
+          compose(coerceToFn, path(['options', 'machines'])),
+          identity
+        ]),
+        identity
+      ])
     )
+  )
 ])
 
 /**
@@ -330,27 +330,27 @@ export const createDuckMachines = converge(mergeDeepRight, [
  * @returns {Object} A clone of the duck, but now with initialState (if it was found inside of 'options').
  */
 export const createDuckInitialState = converge(mergeDeepRight, [
-    identity,
-    compose(
-        objOf('initialState'),
-        converge(mergeDeepRight, [
-            converge(call, [
-                compose(coerceToFn, path(['options', 'initialState'])),
-                identity
-            ]),
-            ifElse(
-                propSatisfies(isEmpty, 'machines'),
-                always({}),
-                compose(
-                    applyTo({}),
-                    converge(assocPath, [prop('stateMachinesPropName'), compose(
-                        getDefaultStateForMachines,
-                        prop('machines')
-                    )])
-                )
-            )
-        ])
-    )
+  identity,
+  compose(
+    objOf('initialState'),
+    converge(mergeDeepRight, [
+      converge(call, [
+        compose(coerceToFn, path(['options', 'initialState'])),
+        identity
+      ]),
+      ifElse(
+        propSatisfies(isEmpty, 'machines'),
+        always({}),
+        compose(
+          applyTo({}),
+          converge(assocPath, [prop('stateMachinesPropName'), compose(
+            getDefaultStateForMachines,
+            prop('machines')
+          )])
+        )
+      )
+    ])
+  )
 ])
 
 /**
@@ -362,19 +362,19 @@ export const createDuckInitialState = converge(mergeDeepRight, [
  * @returns {Object} A clone of the duck, but now with selectors (if they were found inside of 'options').
  */
 export const createDuckSelectors = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        pathSatisfies(isNil, ['options', 'selectors']),
-        always({}),
-        compose(
-            objOf('selectors'),
-            deriveSelectors,
-            converge(call, [
-                compose(coerceToFn, path(['options', 'selectors'])),
-                identity
-            ])
-        )
+  identity,
+  ifElse(
+    pathSatisfies(isNil, ['options', 'selectors']),
+    always({}),
+    compose(
+      objOf('selectors'),
+      deriveSelectors,
+      converge(call, [
+        compose(coerceToFn, path(['options', 'selectors'])),
+        identity
+      ])
     )
+  )
 ])
 
 /**
@@ -398,19 +398,19 @@ export const makeEnhancers = ifElse(is(Array), shapeline, makeShaper)
  * @returns {Object} A clone of the duck, but now with action enhancers (if they were found inside of 'options').
  */
 export const createDuckActionEnhancers = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        pathSatisfies(isNil, ['options', 'enhancers']),
-        always({}),
-        compose(
-            objOf('enhancers'),
-            map(makeEnhancers),
-            converge(call, [
-                compose(coerceToFn, path(['options', 'enhancers'])),
-                identity
-            ])
-        )
+  identity,
+  ifElse(
+    pathSatisfies(isNil, ['options', 'enhancers']),
+    always({}),
+    compose(
+      objOf('enhancers'),
+      map(makeEnhancers),
+      converge(call, [
+        compose(coerceToFn, path(['options', 'enhancers'])),
+        identity
+      ])
     )
+  )
 ])
 
 /**
@@ -434,19 +434,19 @@ export const makeMultipliers = compose(juxt, map(makeShaper), unless(is(Array), 
  * @returns {Object} A clone of the duck, but now with action multipliers (if they were found inside of 'options').
  */
 export const createDuckActionMultipliers = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        pathSatisfies(isNil, ['options', 'multipliers']),
-        always({}),
-        compose(
-            objOf('multipliers'),
-            map(makeMultipliers),
-            converge(call, [
-                compose(coerceToFn, path(['options', 'multipliers'])),
-                identity
-            ])
-        )
+  identity,
+  ifElse(
+    pathSatisfies(isNil, ['options', 'multipliers']),
+    always({}),
+    compose(
+      objOf('multipliers'),
+      map(makeMultipliers),
+      converge(call, [
+        compose(coerceToFn, path(['options', 'multipliers'])),
+        identity
+      ])
     )
+  )
 ])
 /**
  * Creates the Duck's action creators (if they are present inside of its 'options' prop).
@@ -457,18 +457,18 @@ export const createDuckActionMultipliers = converge(mergeDeepRight, [
  * @returns {Object} A clone of the duck, but now with action creators (if they were found inside of 'options').
  */
 export const createDuckActionCreators = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        pathSatisfies(isNil, ['options', 'creators']),
-        always({}),
-        compose(
-            objOf('creators'),
-            converge(call, [
-                compose(coerceToFn, path(['options', 'creators'])),
-                identity
-            ])
-        )
+  identity,
+  ifElse(
+    pathSatisfies(isNil, ['options', 'creators']),
+    always({}),
+    compose(
+      objOf('creators'),
+      converge(call, [
+        compose(coerceToFn, path(['options', 'creators'])),
+        identity
+      ])
     )
+  )
 ])
 
 /**
@@ -480,15 +480,15 @@ export const createDuckActionCreators = converge(mergeDeepRight, [
  * @returns {Object} A clone of the duck, but now with a reducer (if it was found inside of 'options').
  */
 export const createDuckReducer = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        either(
-            pathSatisfies(isNil, ['options', 'reducer']),
-            propSatisfies(isEmpty, 'machines')
-        ),
-        compose(objOf('reducer'), createReducer),
-        compose(objOf('reducer'), createTransitionsPostReducer)
-    )
+  identity,
+  ifElse(
+    either(
+      pathSatisfies(isNil, ['options', 'reducer']),
+      propSatisfies(isEmpty, 'machines')
+    ),
+    compose(objOf('reducer'), createReducer),
+    compose(objOf('reducer'), createTransitionsPostReducer)
+  )
 ])
 
 /**
@@ -500,17 +500,17 @@ export const createDuckReducer = converge(mergeDeepRight, [
  * @returns {Object} A clone of the duck, but now with validator helpers (if validators were found inside of 'options').
  */
 export const createValidationMiddlewareHelpers = converge(mergeDeepRight, [
-    identity,
-    ifElse(
-        propSatisfies(isNil, 'validators'),
-        always({}),
-        compose(
-            applySpec({
-                isPayloadValid: createPayloadValidator,
-                getValidationErrors: createPayloadValidationsLogger,
-                pruneInvalidFields: createPayloadPruner
-            }),
-            prop('validators')
-        )
+  identity,
+  ifElse(
+    propSatisfies(isNil, 'validators'),
+    always({}),
+    compose(
+      applySpec({
+        isPayloadValid: createPayloadValidator,
+        getValidationErrors: createPayloadValidationsLogger,
+        pruneInvalidFields: createPayloadPruner
+      }),
+      prop('validators')
     )
+  )
 ])

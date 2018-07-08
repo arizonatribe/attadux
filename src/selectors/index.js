@@ -26,19 +26,19 @@ export const needsExtraction = compose(equals(true), prop('needsExtraction'))
  * @returns {Object} selectors, but now with access to fellow selectors
  */
 export const deriveSelectors = (selectors = {}) =>
-    compose(
-        reduce((composedSelectors, [key, selector]) => ({
-            ...composedSelectors,
-            [key]: selector.justAddDuckSelectors(composedSelectors)
-        }), selectors),
-        toPairs,
-        pickBy(needsExtraction)
-    )(selectors)
+  compose(
+    reduce((composedSelectors, [key, selector]) => ({
+      ...composedSelectors,
+      [key]: selector.justAddDuckSelectors(composedSelectors)
+    }), selectors),
+    toPairs,
+    pickBy(needsExtraction)
+  )(selectors)
 
 /**
  * A simple, Ramda implementation of Reselect's `createSelector()` function,
  * taken from [this example](https://twitter.com/sharifsbeat/status/891001130632830976)
- * The cost of all the Ramda functions which make up Attadux has already been
+ * The cost of all the Ramda functions which make up this library has already been
  * paid, so may as well save on another dependency. You can still use Reselect
  * if you prefer; they both work the same.
  *
@@ -67,12 +67,12 @@ export const createSelector = (...selectors) => memoize(converge(last(selectors)
  * @returns {Object}
  */
 export const createDuckSelector = (extractFunction) => ({
-    needsExtraction: true,
-    justAddDuckSelectors(allSelectorsObject = {}) {
-        const extracted = extractFunction(allSelectorsObject)
-        if (Array.isArray(extracted)) {
-            return createSelector(...extracted)
-        }
-        return extracted
+  needsExtraction: true,
+  justAddDuckSelectors(allSelectorsObject = {}) {
+    const extracted = extractFunction(allSelectorsObject)
+    if (Array.isArray(extracted)) {
+      return createSelector(...extracted)
     }
+    return extracted
+  }
 })
