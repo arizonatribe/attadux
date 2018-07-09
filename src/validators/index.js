@@ -1,29 +1,29 @@
 import {
-    __,
-    always,
-    any,
-    applyTo,
-    both,
-    compose,
-    contains,
-    curry,
-    defaultTo,
-    either,
-    is,
-    isEmpty,
-    keys,
-    not,
-    nth,
-    prop,
-    reduce,
-    reject,
-    T,
-    toPairsIn,
-    toUpper,
-    trim,
-    unless,
-    valuesIn,
-    when
+  __,
+  always,
+  any,
+  applyTo,
+  both,
+  compose,
+  contains,
+  curry,
+  defaultTo,
+  either,
+  is,
+  isEmpty,
+  keys,
+  not,
+  nth,
+  prop,
+  reduce,
+  reject,
+  T,
+  toPairsIn,
+  toUpper,
+  trim,
+  unless,
+  valuesIn,
+  when
 } from 'ramda'
 
 import {isPlainObj, coerceToString} from '../util'
@@ -50,10 +50,10 @@ export const isValidationLevel = contains(__, keys(VALIDATION_LEVELS))
  * @returns {String} One of [STRICT, CANCEL, PRUNE, LOG]
  */
 export const makeValidationLevel = compose(
-    unless(isValidationLevel, always('CANCEL')),
-    toUpper,
-    trim,
-    coerceToString
+  unless(isValidationLevel, always('CANCEL')),
+  toUpper,
+  trim,
+  coerceToString
 )
 
 /**
@@ -68,20 +68,20 @@ export const makeValidationLevel = compose(
  * @returns {Object} The validations result pruned of all invalid fields
  */
 export const pruneInvalidFields = curry((original, validations) =>
-    compose(
-        reduce((prunedObj, [key, val]) => {
-            const value = isPlainObj(val) ? pruneInvalidFields(original[key], val) : val
-            if (isPlainObj(value) && isEmpty(value)) {
-                return prunedObj
-            }
-            return {
-                ...prunedObj,
-                [key]: value === true ? original[key] : value
-            }
-        }, {}),
-        reject(compose(is(Array), nth(1))),
-        toPairsIn
-    )(validations)
+  compose(
+    reduce((prunedObj, [key, val]) => {
+      const value = isPlainObj(val) ? pruneInvalidFields(original[key], val) : val
+      if (isPlainObj(value) && isEmpty(value)) {
+        return prunedObj
+      }
+      return {
+        ...prunedObj,
+        [key]: value === true ? original[key] : value
+      }
+    }, {}),
+    reject(compose(is(Array), nth(1))),
+    toPairsIn
+  )(validations)
 )
 
 /**
@@ -94,15 +94,15 @@ export const pruneInvalidFields = curry((original, validations) =>
  * @returns {Object} The validations result pruned of all valid fields
  */
 export const pruneValidatedFields = compose(
-    reduce((prunedObj, [key, val]) => {
-        const value = isPlainObj(val) ? pruneValidatedFields(val) : val
-        if (isPlainObj(value) && isEmpty(value)) {
-            return prunedObj
-        }
-        return {...prunedObj, [key]: value}
-    }, {}),
-    reject(pairs => pairs[1] === true),
-    toPairsIn
+  reduce((prunedObj, [key, val]) => {
+    const value = isPlainObj(val) ? pruneValidatedFields(val) : val
+    if (isPlainObj(value) && isEmpty(value)) {
+      return prunedObj
+    }
+    return {...prunedObj, [key]: value}
+  }, {}),
+  reject(pairs => pairs[1] === true),
+  toPairsIn
 )
 
 /**
@@ -115,9 +115,9 @@ export const pruneValidatedFields = compose(
  * always returning True if none exists)
  */
 export const getValidatorForAction = validators => compose(
-    defaultTo(T),
-    prop(__, validators),
-    prop('type')
+  defaultTo(T),
+  prop(__, validators),
+  prop('type')
 )
 
 /**
@@ -131,13 +131,13 @@ export const getValidatorForAction = validators => compose(
  * @returns {Object} The original action paylod, minus any invalid fields
  */
 export const createPayloadPruner = (validators = {}) =>
-    (action = {}) =>
-        compose(
-            when(isEmpty, always(null)),
-            pruneInvalidFields(action),
-            validate => validate(action),
-            getValidatorForAction(validators)
-        )(action)
+  (action = {}) =>
+    compose(
+      when(isEmpty, always(null)),
+      pruneInvalidFields(action),
+      validate => validate(action),
+      getValidatorForAction(validators)
+    )(action)
 
 /**
  * Creates a function that will receive a dispatched action and apply a validator function that
@@ -150,13 +150,13 @@ export const createPayloadPruner = (validators = {}) =>
  * @returns {Object|null} An Object of validation errors, if any, otherwise returns null
  */
 export const createPayloadValidationsLogger = (validators = {}) =>
-    (action = {}) =>
-        compose(
-            when(isEmpty, always(null)),
-            pruneValidatedFields,
-            applyTo(action),
-            getValidatorForAction(validators)
-        )(action)
+  (action = {}) =>
+    compose(
+      when(isEmpty, always(null)),
+      pruneValidatedFields,
+      applyTo(action),
+      getValidatorForAction(validators)
+    )(action)
 
 /**
  * Inspects an Object (can even be nested) of validation results, for props which failed validation.
@@ -170,8 +170,8 @@ export const createPayloadValidationsLogger = (validators = {}) =>
  * @returns {Boolean}
  */
 export const anyValidationFailures = (validations = {}) => compose(
-    any(either(both(isPlainObj, anyValidationFailures), is(Array))),
-    valuesIn
+  any(either(both(isPlainObj, anyValidationFailures), is(Array))),
+  valuesIn
 )(validations)
 
 /**
@@ -185,10 +185,10 @@ export const anyValidationFailures = (validations = {}) => compose(
  * @returns {Function} A validator function to be applied against a dispatched action
  */
 export const createPayloadValidator = (validators = {}) =>
-    (action = {}) =>
-        compose(
-            not,
-            anyValidationFailures,
-            applyTo(action),
-            getValidatorForAction(validators)
-        )(action)
+  (action = {}) =>
+    compose(
+      not,
+      anyValidationFailures,
+      applyTo(action),
+      getValidatorForAction(validators)
+    )(action)

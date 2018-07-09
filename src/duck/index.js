@@ -1,21 +1,21 @@
 import {always, compose, converge, mergeDeepRight, uncurryN} from 'ramda'
 import {duxDefaults} from './schema'
 import {
-    createDuckEffects,
-    createDuckThrottlers,
-    createDuckDebouncers,
-    createDuckWorkers,
-    createDuckQueries,
-    createDuckValidators,
-    createDuckMachines,
-    createDuckInitialState,
-    createDuckSelectors,
-    createDuckActionCreators,
-    createDuckActionEnhancers,
-    createDuckActionMultipliers,
-    createDuckReducer,
-    createDuckMetadata,
-    createValidationMiddlewareHelpers
+  createDuckEffects,
+  createDuckThrottlers,
+  createDuckDebouncers,
+  createDuckWorkers,
+  createDuckQueries,
+  createDuckValidators,
+  createDuckMachines,
+  createDuckInitialState,
+  createDuckSelectors,
+  createDuckActionCreators,
+  createDuckActionEnhancers,
+  createDuckActionMultipliers,
+  createDuckReducer,
+  createDuckMetadata,
+  createValidationMiddlewareHelpers
 } from './create'
 import {createDuckExtender} from './extend'
 
@@ -33,23 +33,23 @@ import {createDuckExtender} from './extend'
  * a reducer, selectors, state machines, validators and some basic metadata.
  */
 export const createDuck = compose(
-    Object.freeze,
-    createDuckReducer,
-    createDuckEffects,
-    createDuckWorkers,
-    createValidationMiddlewareHelpers,
-    createDuckActionMultipliers,
-    createDuckActionEnhancers,
-    createDuckActionCreators,
-    createDuckDebouncers,
-    createDuckThrottlers,
-    createDuckSelectors,
-    createDuckInitialState,
-    createDuckMachines,
-    createDuckValidators,
-    createDuckQueries,
-    createDuckMetadata,
-    mergeDeepRight(duxDefaults)
+  Object.freeze,
+  createDuckReducer,
+  createDuckEffects,
+  createDuckWorkers,
+  createValidationMiddlewareHelpers,
+  createDuckActionMultipliers,
+  createDuckActionEnhancers,
+  createDuckActionCreators,
+  createDuckDebouncers,
+  createDuckThrottlers,
+  createDuckSelectors,
+  createDuckInitialState,
+  createDuckMachines,
+  createDuckValidators,
+  createDuckQueries,
+  createDuckMetadata,
+  mergeDeepRight(duxDefaults)
 )
 
 /**
@@ -63,7 +63,7 @@ export const createDuck = compose(
  * @returns {Object} An extender function, ready to be supplied a set of options to extend the original duck.
  */
 export const createExtenderForDuck = converge(
-    compose, [always(createDuck), createDuckExtender]
+  compose, [always(createDuck), createDuckExtender]
 )
 
 /**

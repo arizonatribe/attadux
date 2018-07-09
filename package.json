@@ -1,7 +1,7 @@
 {
-  "name": "attadux",
-  "version": "0.1.19",
-  "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, and to follow a broader/looser definition of constants",
+  "name": "duckware",
+  "version": "0.3.0",
+  "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, web workers, effect handling, action multipliers, action enhancers, action throttling/debouncing, and to follow a broader/looser definition of constants",
   "main": "cjs/index.js",
   "module": "es/index.js",
   "jsnext:main": "es/index.js",
@@ -13,25 +13,27 @@
     "prepublish": "npm run prepare",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir cjs",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/attadux.js",
-    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/attadux.min.js",
+    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/duckware.js",
+    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/duckware.min.js",
     "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
     "prepare": "npm run clean && npm run lint && npm test & npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Attainia/attadux.git"
+    "url": "https://github.com/arizonatribe/duckware.git"
   },
   "keywords": [
-    "attainia",
-    "attadux",
+    "duckware",
     "javascript",
     "ramda",
     "redux",
     "reducer",
     "machine",
     "state",
-    "saga",
+    "functional",
+    "worker",
+    "enhancer",
+    "multiplier",
     "selector",
     "creator",
     "types",
@@ -40,8 +42,8 @@
     "dux"
   ],
   "authors": [
-    "Andre Aizim Kelmanosn (pre-fork author) <akelmanson@gmail.com>",
-    "David Nunez <david.nunez@attainia.com>"
+    "Andre Aizim Kelmanson (pre-fork author) <akelmanson@gmail.com>",
+    "David Nunez <arizonatribe@gmail.com>"
   ],
   "license": "MIT",
   "dependencies": {
@@ -54,29 +56,10 @@
     "babel-cli": "6.26.0",
     "babel-core": "6.26.0",
     "babel-eslint": "8.0.1",
-    "babel-plugin-check-es2015-constants": "6.3.13",
+    "babel-plugin-external-helpers": "6.22.0",
     "babel-plugin-ramda": "1.4.3",
-    "babel-plugin-syntax-async-functions": "6.13.0",
-    "babel-plugin-transform-es2015-arrow-functions": "6.3.13",
-    "babel-plugin-transform-es2015-block-scoped-functions": "6.3.13",
-    "babel-plugin-transform-es2015-block-scoping": "6.26.0",
-    "babel-plugin-transform-es2015-classes": "6.3.13",
-    "babel-plugin-transform-es2015-computed-properties": "6.3.13",
-    "babel-plugin-transform-es2015-destructuring": "6.3.13",
-    "babel-plugin-transform-es2015-for-of": "6.3.13",
-    "babel-plugin-transform-es2015-function-name": "6.3.13",
-    "babel-plugin-transform-es2015-literals": "6.3.13",
-    "babel-plugin-transform-es2015-modules-commonjs": "6.26.0",
-    "babel-plugin-transform-es2015-object-super": "6.3.13",
-    "babel-plugin-transform-es2015-parameters": "6.3.13",
-    "babel-plugin-transform-es2015-shorthand-properties": "6.3.13",
-    "babel-plugin-transform-es2015-spread": "6.3.13",
-    "babel-plugin-transform-es2015-sticky-regex": "6.3.13",
-    "babel-plugin-transform-es2015-template-literals": "6.3.13",
-    "babel-plugin-transform-es2015-unicode-regex": "6.3.13",
-    "babel-plugin-transform-es3-member-expression-literals": "6.5.0",
-    "babel-plugin-transform-es3-property-literals": "6.5.0",
     "babel-plugin-transform-object-rest-spread": "6.26.0",
+    "babel-preset-env": "1.6.1",
     "babel-register": "6.26.0",
     "babel-tape-runner": "2.0.1",
     "chalk": "2.3.0",
@@ -85,16 +68,13 @@
     "eslint-config-airbnb-base": "11.3.2",
     "eslint-plugin-flowtype": "2.39.1",
     "eslint-plugin-import": "2.2.0",
-    "eslint-plugin-jsx-a11y": "5.1.1",
     "faucet": "0.0.1",
     "glob": "7.1.1",
     "nodemon": "1.11.0",
     "rimraf": "2.6.2",
     "rollup": "0.50.0",
-    "rollup-plugin-async": "1.2.0",
     "rollup-plugin-babel": "3.0.2",
     "rollup-plugin-commonjs": "8.2.6",
-    "rollup-plugin-node-builtins": "2.1.2",
     "rollup-plugin-node-resolve": "3.0.0",
     "rollup-plugin-replace": "2.0.0",
     "rollup-plugin-uglify": "2.0.1",
@@ -108,17 +88,8 @@
     "printWidth": 120,
     "semi": false,
     "singleQuote": true,
-    "tabWidth": 4,
+    "tabWidth": 2,
     "trailingComma": "none",
     "useTabs": false
-  },
-  "npmName": "attadux",
-  "npmFileMap": [
-    {
-      "basePath": "/dist/",
-      "files": [
-        "*.js"
-      ]
-    }
-  ]
+  }
 }

@@ -60,18 +60,18 @@ export const listOfPairsToOneObject = (returnObj, [key, val]) => ({...returnObj,
  * @returns {*} the merged result of two values
  */
 export const simpleMergeStrategy = (parent, child) => {
-    if (getType(parent) !== getType(child) || isNil(child)) {
-        if (is(Array, parent) && !isNil(child)) {
-            return [...parent, ...coerceToArray(child)]
-        }
-        if (!isPlainObj(parent)) {
-            return parent
-        }
-    } else if (isPrimitiveish(child) || is(Function, child)) {
-        return child
-    } else if (is(Array, parent)) {
-        return [...parent, ...coerceToArray(child)]
+  if (getType(parent) !== getType(child) || isNil(child)) {
+    if (is(Array, parent) && !isNil(child)) {
+      return [...parent, ...coerceToArray(child)]
     }
+    if (!isPlainObj(parent)) {
+      return parent
+    }
+  } else if (isPrimitiveish(child) || is(Function, child)) {
+    return child
+  } else if (is(Array, parent)) {
+    return [...parent, ...coerceToArray(child)]
+  }
 
-    return mergeDeepRight(parent, child)
+  return mergeDeepRight(parent, child)
 }

@@ -1,17 +1,17 @@
-# Attadux
+# Duckware
 
 An implementation of the [modular redux proposal](https://github.com/erikras/ducks-modular-redux), forked from the [extensible-duck](https://github.com/investtools/extensible-duck) implementation with added features to support state machines and object validators (using the [spected](https://github.com/25th-floor/spected) tool). Attadux depends only on [Ramda](http://ramdajs.com) (or on libraries which only depend on Ramda) and also provides [an alternate implementation (in Ramda, of course) of Reselect's `createSelector()` function](https://twitter.com/sharifsbeat/status/891001130632830976).
 
 # Installation
 
 ```
-npm install attadux
+npm install duckware
 ```
 
 # Usage
 
 ```javascript
-import {createDuck} from 'attadux'
+import {createDuck} from 'duckware'
 
 const dux = createDuck({/* options */})
 ```
@@ -26,7 +26,7 @@ When instantiating a `Duck` you'll pass a single prop, which is just an `Object`
 * __consts__ - An `Object` (or a `Function` returning one) containing any simple primitive-ish values that your application may use (and which do not fall into any of the other categories of props to feed into your Duck instance). Mostly this will be `String`, `Number` and other simple values (`Date`, `RegExp`, `Boolean`). Even an `Array` is an acceptable prop to place inside the consts. Arrays are converted into an `Object` whose values match the values from your array, but whose keys are stringified representations of the values. Only `Date`, `String`, `Number`, `Boolean` or `RegExp` are acceptable in your array, in part because their stringified value will still be unique.
 * __reducer__ - A `Function` that modifies/re-shapes your store in response to a specific type of action dispatched in your application. You can write your reducer in the way you've always written them in Redux, but with the added benefit of the Duck instance is provided as the third prop (the first two props provided to any Redux reducer are always `state` and `action`, respectively). You can leverage `types`, state `machines`, `consts` or anything else on your Duck instance, which (hopefully) makes the code you write simpler or more powerful.
 * __initialState__ - Usually an `Object` (or a `Function` returning one). Sometimes people demonstrate examples where the initialState of the Redux store is a primitive value, but certainly isn't as common. This represents the initial condition you want this section of your Redux store to have.
-* __selectors__ - An `Object` of scalar functions (or a `Function` returning an `Object` of them) returning a single value from the Redux store (no matter how deeply nested). Most often you use these for the first argument to the Redux `connect()` function, which maps the store to your component's props. These functions are memoized for performance and it's become common to leverage a tool like [Reselect](https://github.com/reactjs/reselect) to facilitate this process, however a simple, copycat version of Reselect's `createSelector()` function ([implemented in Ramda](https://twitter.com/sharifsbeat/status/891001130632830976)) is provided for your use (it's a named export you can import directly from `attadux`)
+* __selectors__ - An `Object` of scalar functions (or a `Function` returning an `Object` of them) returning a single value from the Redux store (no matter how deeply nested). Most often you use these for the first argument to the Redux `connect()` function, which maps the store to your component's props. These functions are memoized for performance and it's become common to leverage a tool like [Reselect](https://github.com/reactjs/reselect) to facilitate this process, however a simple, copycat version of Reselect's `createSelector()` function ([implemented in Ramda](https://twitter.com/sharifsbeat/status/891001130632830976)) is provided for your use (it's a named export you can import directly from `duckware`)
 * __machines__ - An `Object` of `Object`s (but nothing nested deeper than that second `Object`). Each of those nested objects is a possible "state" for your component (or your application as a whole, if you want to use just one state machine to cover the entire app). Your component (or app) can be in only one state at a time and that "current state" is a `String` value that will be automatically populated when your dispatched Redux action forces a change to a different state. For the nested object: the key is the unique name for that state and the value (which is an object) contains all the transitions to which that state is allowed to change. When representing those allowed state transitions the key must match a Redux action `type` (ie, "LOGIN_USER_SUCCESSFUL", "LOGIN_USER_ERROR", etc.) and the value must match a the name of one of the other states defined for that machine. State machines may be a little confusing the first time you encounter the topic (and specifically how you might graft it into your Redux ecosystem), but the author of the [stent](https://github.com/krasimir/stent) library wrote up a [great article](http://krasimirtsonev.com/blog/article/managing-state-in-javascript-with-state-machines-stent) which might help clarify how state machines could work in JavaScript. However Attadux has not implemented state machines using Stent nor have state machines been grafted into Redux in the way that author or others have attempted. The [redux-machine](https://github.com/mheiber/redux-machine) library is the closest to the way state machines have been implemented in Attadux, which just sets a "status" prop to represent the current/new state whenever your reducer is invoked.
 * __creators__ - An `Object` of action-creator functions (or a `Function` returning an `Object` of them) which return a plain 'old JavaScript `Object` representing the action to be dispatched to your reducer(s). It must contain a `type` prop.
 * __enhancers__ - An `Object` of action-enhancer functions (or a `Function` returning an `Object` of them) which return a plain 'old JavaScript `Object` representing the action to be modified prior to hitting the reducers (in the Redux middleware chain). These enhancers are generic enough that you don't have to use them in Redux, as then simply modify an object containing (at least) a `type` prop The syntax for writing the enhancers is to define (what looks like) just an object whose keys represent names of props on the original action or new ones to be created on it. You can use the enhancer function to modify existing props (formatting, etc.) or create new props from existing ones. The values you set on the enhancer function's spec object are usually functions that make those modifications to existing props (or creates new ones), however you can also set values that are _not_ functions, which will cause them be be passed right through onto the modified object. See [shapey](https://github.com/arizonatribe/shapey) for further examples on this type of API. One last caveat to these Action enhancers is that you don't (and shouldn't usually) set a `type` prop on the enhancer function's spec object, however if you _do_ so, the behavior of the enhancer changes to create a new object with _only_ the fields you named in the spec object (the default behavior of the enhancer function is to _merge_ the result of the enhancement back onto the original action).
@@ -49,13 +49,13 @@ Also, if you wish to track machine states on a prop other than `states` (at the 
 
 ## Middleware
 
-The middleware currently has one purpose, to validate any of the dispatched redux actions. You can, of course, use validators for many things - like user form input - but if you give a validator the same name as a redux action type, then you can use it to validate a redux action. All you need to do (aside from naming your validator appropriately) is apply the attadux middleware when you configure your redux store.
+The middleware currently has one purpose, to validate any of the dispatched redux actions. You can, of course, use validators for many things - like user form input - but if you give a validator the same name as a redux action type, then you can use it to validate a redux action. All you need to do (aside from naming your validator appropriately) is apply the ducks middleware when you configure your redux store.
 
 ```javascript
 //store.js
 
 import {createStore, applyMiddleware} from 'redux'
-import {createValidatorMiddleware} from 'attadux'
+import createMiddleware from 'duckware'
 
 import initialState from './initialState'
 import reducers from './reducers'
@@ -64,7 +64,7 @@ import allDucks from './ducks'
 export default createStore(
     reducers,
     initialState,
-    applyMiddleware(createValidatorMiddleware(allDucks))
+    applyMiddleware(createMiddleware(allDucks))
 )
 ```
 
@@ -73,7 +73,7 @@ And to create the "row" of ducks (very similar to `combineReducers()` for your R
 ```javascript
 // ducks.js
 
-import {createRow} from 'attadux'
+import {createRow} from 'duckware'
 import authDuck from './components/auth/duck'
 import products from './components/products/duck'
 import customers from './components/customers/duck'

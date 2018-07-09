@@ -2,7 +2,7 @@ import {assocPath, compose, converge, curry, defaultTo, identity, isNil, path, p
 import {addTransitionsToState, getNextState} from '../machines'
 
 const initialIfNil = (state, duck) => (
-    isNil(state) ?
+  isNil(state) ?
     prop('initialState', duck) :
     state
 )
@@ -28,7 +28,7 @@ const initialIfNil = (state, duck) => (
  * this partially curried function as a redux reducer in the combineReducers() setup.
  */
 export const makeReducer = curry(
-    (reducer, duck, state, action) => reducer(initialIfNil(state, duck), action, duck)
+  (reducer, duck, state, action) => reducer(initialIfNil(state, duck), action, duck)
 )
 
 /**
@@ -58,20 +58,20 @@ export const makeReducer = curry(
  * this partially curried function as a redux reducer in the combineReducers() setup.
  */
 export const makeTransitionsPostReducer = curry(
-    (reducer, dux, state, action) => {
-        const stateWithTransitions = addTransitionsToState(initialIfNil(state, dux), dux)
+  (reducer, dux, state, action) => {
+    const stateWithTransitions = addTransitionsToState(initialIfNil(state, dux), dux)
 
-        const updatedStates = assocPath(
-            dux.stateMachinesPropName,
-            getNextState(stateWithTransitions, action, dux),
-            {}
-        )
+    const updatedStates = assocPath(
+      dux.stateMachinesPropName,
+      getNextState(stateWithTransitions, action, dux),
+      {}
+    )
 
-        return {
-            ...reducer({...stateWithTransitions, ...updatedStates}, action, dux),
-            ...updatedStates
-        }
+    return {
+      ...reducer({...stateWithTransitions, ...updatedStates}, action, dux),
+      ...updatedStates
     }
+  }
 )
 
 /**
@@ -95,12 +95,12 @@ export const makeTransitionsPostReducer = curry(
  * this partially curried function as a redux reducer in the combineReducers() setup.
  */
 export const makeExtendedReducer = curry(
-    (parentOptions, childOptions, state, action, duck) =>
-        childOptions.reducer(
-            parentOptions.reducer(initialIfNil(state), action, duck),
-            action,
-            duck
-        )
+  (parentOptions, childOptions, state, action, duck) =>
+    childOptions.reducer(
+      parentOptions.reducer(initialIfNil(state), action, duck),
+      action,
+      duck
+    )
 )
 
 /**
@@ -115,8 +115,8 @@ export const makeExtendedReducer = curry(
  * @returns {Function} A wrapped reducer, ready to be invoked with state and action params
  */
 export const createReducer = converge(makeReducer, [
-    compose(defaultTo(identity), path(['options', 'reducer'])),
-    identity
+  compose(defaultTo(identity), path(['options', 'reducer'])),
+  identity
 ])
 
 /**
@@ -134,6 +134,6 @@ export const createReducer = converge(makeReducer, [
  * @returns {Function} A wrapped reducer, ready to be invoked with state and action params
  */
 export const createTransitionsPostReducer = converge(makeTransitionsPostReducer, [
-    compose(defaultTo(identity), path(['options', 'reducer'])),
-    identity
+  compose(defaultTo(identity), path(['options', 'reducer'])),
+  identity
 ])

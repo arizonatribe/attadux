@@ -1,35 +1,35 @@
 import {
-    __,
-    all,
-    always,
-    any,
-    applyTo,
-    compose,
-    concat,
-    cond,
-    converge,
-    curry,
-    find,
-    has,
-    identity,
-    ifElse,
-    is,
-    isNil,
-    last,
-    map,
-    mapAccum,
-    mergeAll,
-    mergeDeepRight,
-    mergeDeepWith,
-    pair,
-    path,
-    objOf,
-    of,
-    prop,
-    reduce,
-    T,
-    uniq,
-    when
+  __,
+  all,
+  always,
+  any,
+  applyTo,
+  compose,
+  concat,
+  cond,
+  converge,
+  curry,
+  find,
+  has,
+  identity,
+  ifElse,
+  is,
+  isNil,
+  last,
+  map,
+  mapAccum,
+  mergeAll,
+  mergeDeepRight,
+  mergeDeepWith,
+  pair,
+  path,
+  objOf,
+  of,
+  prop,
+  reduce,
+  T,
+  uniq,
+  when
 } from 'ramda'
 import {makeExtendedReducer} from '../reducers'
 import {duxDefaults} from './schema'
@@ -49,28 +49,28 @@ import {coerceToFn, simpleMergeStrategy} from '../util'
  * will merge the parent and child together for that prop
  */
 export const createOptionsExtender = curry(
-    (childDuckOptions, {options: parentOptions}, key) =>
-        cond([
-            /* If the key at the child or parent is a function */
-            [compose(any(is(Function)), map(prop(key)), pair(parentOptions)),
-                /**
+  (childDuckOptions, {options: parentOptions}, key) =>
+    cond([
+      /* If the key at the child or parent is a function */
+      [compose(any(is(Function)), map(prop(key)), pair(parentOptions)),
+        /**
                  * then they both need to be invoked
                  * (coerced to fn, if not already)
                  * and then their results are merged
                  */
-                always(converge(mergeDeepWith(simpleMergeStrategy), [
-                    coerceToFn(parentOptions[key]),
-                    converge(coerceToFn(childDuckOptions[key]), [
-                        identity,
-                        coerceToFn(parentOptions[key])
-                    ])
-                ]))
-            ],
-            /* If the child doesn't have anything at that key, just return from the parent */
-            [compose(isNil, prop(key)), always(parentOptions[key])],
-            /* Otherwise, simply merge the parent and child together at that key */
-            [T, compose(mergeDeepWith(simpleMergeStrategy, parentOptions[key]), prop(key))]
-        ])(childDuckOptions)
+        always(converge(mergeDeepWith(simpleMergeStrategy), [
+          coerceToFn(parentOptions[key]),
+          converge(coerceToFn(childDuckOptions[key]), [
+            identity,
+            coerceToFn(parentOptions[key])
+          ])
+        ]))
+      ],
+      /* If the child doesn't have anything at that key, just return from the parent */
+      [compose(isNil, prop(key)), always(parentOptions[key])],
+      /* Otherwise, simply merge the parent and child together at that key */
+      [T, compose(mergeDeepWith(simpleMergeStrategy, parentOptions[key]), prop(key))]
+    ])(childDuckOptions)
 )
 
 /**
@@ -88,14 +88,14 @@ export const createOptionsExtender = curry(
  * or one of the reducers (if a reducer wasn't present in both sets of config options)
  */
 export const extendReducer = ({options: parentOptions}) =>
-    compose(
-        ifElse(
-            all(has('reducer')),
-            compose(makeExtendedReducer(parentOptions), last),
-            compose(find(has('reducer')), pair(parentOptions))
-        ),
-        pair(parentOptions)
-    )
+  compose(
+    ifElse(
+      all(has('reducer')),
+      compose(makeExtendedReducer(parentOptions), last),
+      compose(find(has('reducer')), pair(parentOptions))
+    ),
+    pair(parentOptions)
+  )
 
 /**
  * Merges a set of configuration options (for a new duck) with those of an
@@ -111,17 +111,17 @@ export const extendReducer = ({options: parentOptions}) =>
  * (to-be-built) duck's configuration options
  */
 export const extendOptionsForDuck = duck =>
-    compose(
-        converge(mergeDeepRight, [
-            identity,
-            compose(objOf('reducer'), extendReducer(duck))
-        ]),
-        reduce(mergeDeepRight, {}),
-        concat([duxDefaults, duck.options]),
-        of,
-        applyTo(duck),
-        coerceToFn
-    )
+  compose(
+    converge(mergeDeepRight, [
+      identity,
+      compose(objOf('reducer'), extendReducer(duck))
+    ]),
+    reduce(mergeDeepRight, {}),
+    concat([duxDefaults, duck.options]),
+    of,
+    applyTo(duck),
+    coerceToFn
+  )
 
 /**
  * Applies a set of evolvers, which are just transformations that are run against a given prop inside of an object.
@@ -141,23 +141,23 @@ export const extendOptionsForDuck = duck =>
  * transformations defined in the evolvers.
  */
 export const createExtendedOptions = curry(
-    (evolvers, duck, options) =>
-        compose(
-            mergeDeepRight(options),
-            mergeAll,
-            last,
-            mapAccum(
-                (mergedDuck, [key, builder]) => {
-                    const option = compose(
-                        objOf(key),
-                        when(is(Function), applyTo(key)),
-                        builder
-                    )(mergedDuck)
-                    return [mergeDeepRight(mergedDuck, option), option]
-                },
-                duck
-            )
-        )(evolvers)
+  (evolvers, duck, options) =>
+    compose(
+      mergeDeepRight(options),
+      mergeAll,
+      last,
+      mapAccum(
+        (mergedDuck, [key, builder]) => {
+          const option = compose(
+            objOf(key),
+            when(is(Function), applyTo(key)),
+            builder
+          )(mergedDuck)
+          return [mergeDeepRight(mergedDuck, option), option]
+        },
+        duck
+      )
+    )(evolvers)
 )
 
 /**
@@ -173,25 +173,25 @@ export const createExtendedOptions = curry(
  * @returns {Object} a merged set of options to be fed into a new duck
  */
 export const createDuckExtender = duck => {
-    const extendOptions = extendOptionsForDuck(duck)
-    return options => {
-        const childOptions = extendOptions(options)
-        const optionBuilders = [
-            ['consts', compose(mergeDeepWith(concatOrReplace, __, childOptions.consts), path(['options', 'consts']))],
-            ['types', compose(uniq, concat(childOptions.types), path(['options', 'types']))],
-            ['initialState', createOptionsExtender(childOptions)],
-            ['machines', createOptionsExtender(childOptions)],
-            ['creators', createOptionsExtender(childOptions)],
-            ['selectors', createOptionsExtender(childOptions)],
-            ['queries', createOptionsExtender(childOptions)],
-            ['enhancers', createOptionsExtender(childOptions)],
-            ['multipliers', createOptionsExtender(childOptions)],
-            ['throttling', createOptionsExtender(childOptions)],
-            ['debouncing', createOptionsExtender(childOptions)],
-            ['effects', createOptionsExtender(childOptions)],
-            ['validators', createOptionsExtender(childOptions)],
-            ['workers', createOptionsExtender(childOptions)]
-        ]
-        return createExtendedOptions(optionBuilders, duck, childOptions)
-    }
+  const extendOptions = extendOptionsForDuck(duck)
+  return options => {
+    const childOptions = extendOptions(options)
+    const optionBuilders = [
+      ['consts', compose(mergeDeepWith(concatOrReplace, __, childOptions.consts), path(['options', 'consts']))],
+      ['types', compose(uniq, concat(childOptions.types), path(['options', 'types']))],
+      ['initialState', createOptionsExtender(childOptions)],
+      ['machines', createOptionsExtender(childOptions)],
+      ['creators', createOptionsExtender(childOptions)],
+      ['selectors', createOptionsExtender(childOptions)],
+      ['queries', createOptionsExtender(childOptions)],
+      ['enhancers', createOptionsExtender(childOptions)],
+      ['multipliers', createOptionsExtender(childOptions)],
+      ['throttling', createOptionsExtender(childOptions)],
+      ['debouncing', createOptionsExtender(childOptions)],
+      ['effects', createOptionsExtender(childOptions)],
+      ['validators', createOptionsExtender(childOptions)],
+      ['workers', createOptionsExtender(childOptions)]
+    ]
+    return createExtendedOptions(optionBuilders, duck, childOptions)
+  }
 }

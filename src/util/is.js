@@ -1,18 +1,21 @@
 import {
-    allPass,
-    anyPass,
-    complement,
-    compose,
-    curry,
-    defaultTo,
-    either,
-    equals,
-    is,
-    isEmpty,
-    isNil,
-    not,
-    path,
-    test
+  all,
+  allPass,
+  anyPass,
+  both,
+  complement,
+  compose,
+  curry,
+  defaultTo,
+  either,
+  equals,
+  is,
+  isEmpty,
+  isNil,
+  not,
+  path,
+  pathSatisfies,
+  test
 } from 'ramda'
 
 /**
@@ -35,9 +38,9 @@ export const isValidPropName = test(/^(?:[A-Z])([A-Z0-9_\-.]+)([A-Z0-9])$/i)
  * @returns {Boolean} whether or not the val is a Promise
  */
 export const isPromise = compose(
-    equals('Promise'),
-    path(['constructor', 'name']),
-    defaultTo('')
+  equals('Promise'),
+  path(['constructor', 'name']),
+  defaultTo('')
 )
 
 /**
@@ -49,9 +52,9 @@ export const isPromise = compose(
  * @returns {Boolean} whether or not the val is a plain old JS object
  */
 export const isPlainObj = compose(
-    equals('Object'),
-    path(['constructor', 'name']),
-    defaultTo('')
+  equals('Object'),
+  path(['constructor', 'name']),
+  defaultTo('')
 )
 
 /**
@@ -85,6 +88,18 @@ export const isNotEmpty = complement(isEmpty)
 export const isNotBlankString = compose(not, test(/^\s*$/))
 
 /**
+ * Most of the time, this is what you're looking for when checking a String value:
+ *   - Is it a String?
+ *   - Is it something other than whitespace?
+ *
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value that may or may not be a non-blank String
+ * @returns {Boolean} Whether or not the value is a non-blank String
+ */
+export const isGoodString = both(is(String), isNotBlankString)
+
+/**
  * Checks to see whether or not a given value is a non-blank String (one or more chars)
  *
  * @func
@@ -93,9 +108,9 @@ export const isNotBlankString = compose(not, test(/^\s*$/))
  * @returns {Boolean} whether or not a given value is a non-blank String
  */
 export const isStringieThingie = allPass([
-    isNotBlankString,
-    either(is(Number), is(String)),
-    isNotNil
+  isNotBlankString,
+  either(is(Number), is(String)),
+  isNotNil
 ])
 
 /**
@@ -109,6 +124,16 @@ export const isStringieThingie = allPass([
 export const isPrimitiveish = anyPass([is(Boolean), is(Number), is(String), is(RegExp), is(Date)])
 
 /**
+ * Check that action is an object with a "type" prop that is a non-blank string
+ * 
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value which may or may not be a Redux action
+ * @returns {Boolean}
+ */
+export const isAction = both(isPlainObj, pathSatisfies(allPass([is(String), test(/\S/)]), ['type']))
+
+/**
  * Checks to see if a provided object has a given prop (path)
  *
  * @func
@@ -118,3 +143,78 @@ export const isPrimitiveish = anyPass([is(Boolean), is(Number), is(String), is(R
  * @returns {Boolean} whether or not the provided prop path exists on the provided object
  */
 export const hasNestedProp = curry((propPath, obj) => compose(isNotNil, path(propPath))(obj))
+
+/**
+ * Checks to see if a given value a Function or an Object
+ * (meant to be transformed into a [Shapey](https://github.com/arizonatribe/shapey) spec Function
+ *
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value to evaluate as a possible pair of predicate (String/RegExp/Function) & transform/effect Function
+ * @returns {Boolean} whether or not the value is an enhancer
+ */
+export const isSpecOrFunction = anyPass([
+  both(is(Array), all(either(is(Function), isPlainObj))),
+  isPlainObj,
+  is(Function)
+])
+
+/**
+ * Checks to see if a given value is an Enhancer, which means it is an Array
+ * that has one of the following as its first index:
+ *   - A Regular Expression
+ *   - A String value (not blank; should match some Action's type value)
+ *   - A predicate function (meant to evaluate a criteria on an Action object)
+ *
+ * For the second index, it checks to see if it is:
+ *   - An Object (meant to be transformed into a [Shapey](https://github.com/arizonatribe/shapey) spec Function
+ *   - A Function meant to return an Action Object
+ *
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value to evaluate as a possible pair of predicate (String/RegExp/Function) & transform/effect Function
+ * @param {Object} obj An object on which a given prop may exist
+ * @returns {Boolean} whether or not the value is a qualifying pre-formed Enhancer
+ */
+export const isEnhancer = allPass([
+  is(Array),
+  pathSatisfies(anyPass([is(RegExp), isGoodString, is(Function)]), [0]),
+  pathSatisfies(either(is(Function), isPlainObj), [1])
+])
+
+/**
+ * Checks to see if a given value is an Array that is meant to be turned into an Effect handler,
+ * which means the first index should be:
+ *   - A Regular Expression
+ *   - A String value (not blank; should match some Action's type value)
+ *   - A predicate function (meant to evaluate a criteria on an Action object)
+ *
+ * For the second index, it checks to see if it is:
+ *   - An Object (meant to be transformed into a [Shapey](https://github.com/arizonatribe/shapey) spec Function
+ *   - A Function meant to produce some kind of effect
+ *
+ * For the (optional) third index, it checks to see if it is:
+ *   - An Object (meant to be transformed into a [Shapey](https://github.com/arizonatribe/shapey) spec Function
+ *   - A Function meant to return an Action Object when the effect succeeds
+ *   - A String, meant to become the "type" prop on a new Action Object that is
+ *     returned when the effect succeeds
+ *
+ * For the (optional) fourth index, it checks to see if it is:
+ *   - An Object (meant to be transformed into a [Shapey](https://github.com/arizonatribe/shapey) spec Function
+ *   - A Function meant to return an Action Object when the effect fails
+ *   - A String, meant to become the "type" prop on a new Action Object that is
+ *     returned when the effect fails
+ *
+ * @func
+ * @sig * -> Boolean
+ * @param {*} val A value to evaluate as a possible pair of predicate (String/RegExp/Function) & transform/effect Function
+ * @param {Object} obj An object on which a given prop may exist
+ * @returns {Boolean} whether or not the value is a qualifying predicate pair
+ */
+export const isEffect = allPass([
+  is(Array),
+  pathSatisfies(anyPass([is(RegExp), isGoodString, is(Function)]), [0]),
+  pathSatisfies(either(is(Function), isPlainObj), [1]),
+  pathSatisfies(anyPass([isNil, isPlainObj, isGoodString, is(Function)]), [2]),
+  pathSatisfies(anyPass([isNil, isPlainObj, isGoodString, is(Function)]), [3])
+])
