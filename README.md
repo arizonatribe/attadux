@@ -1,4 +1,4 @@
-# Unidux
+# Duckware
 
 An implementation of the [modular redux proposal](https://github.com/erikras/ducks-modular-redux), forked from the [extensible-duck](https://github.com/investtools/extensible-duck) implementation with added features to support state machines and object validators (using the [spected](https://github.com/25th-floor/spected) tool). Attadux depends only on [Ramda](http://ramdajs.com) (or on libraries which only depend on Ramda) and also provides [an alternate implementation (in Ramda, of course) of Reselect's `createSelector()` function](https://twitter.com/sharifsbeat/status/891001130632830976).
 

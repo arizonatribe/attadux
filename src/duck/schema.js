@@ -29,7 +29,15 @@ import {
   isEachTransitionAmongMachineStates
 } from '../machines'
 import {createConstants} from '../types'
-import {isNotEmpty, isPrimitiveish, isPlainObj, isStringieThingie} from '../util/is'
+import {
+  isSpecOrFunction,
+  isEffect,
+  isEnhancer,
+  isNotEmpty,
+  isPrimitiveish,
+  isPlainObj,
+  isGoodString
+} from '../util/is'
 import {isValidationLevel, makeValidationLevel} from '../validators'
 
 /**
@@ -74,33 +82,35 @@ export const duxDefaults = {
  */
 export const duxRules = {
   validationLevel: [[isValidationLevel, 'must be: STRICT, CANCEL, PRUNE, or LOG. CANCEL is the default.']],
-  store: [[isStringieThingie, 'must be a (non-blank) string']],
-  namespace: [[isStringieThingie, 'must be a (non-blank) string']],
-  stateMachinesPropName: [[
-    either(isStringieThingie, both(is(Array), all(isStringieThingie))),
-    'must be a string (or array of strings)'
-  ]],
+  store: [[isGoodString, 'must be a (non-blank) string']],
+  namespace: [[isGoodString, 'must be a (non-blank) string']],
+  stateMachinesPropName: [[either(isGoodString, both(is(Array), all(isGoodString))),
+    'must be a string (or array of strings)']],
   consts: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   creators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   machines: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   selectors: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   types: [[both(is(Array), all(is(String))), 'must be an object (or a function returning an object)']],
   validators: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
-  enhancers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   multipliers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   queries: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   workers: [[either(isPlainObj, is(Function)), 'must be an object (or a function returning an object)']],
   reducer: [[is(Function), 'must be a function']],
-  effects: [[either(both(is(Array), all(is(Array))), is(Function)),
+  enhancers: [[
+    anyPass([
+      is(Function),
+      both(isPlainObj, compose(all(isSpecOrFunction), values)),
+      both(is(Array), all(isEnhancer))
+    ]),
+    'must be an array of key/value pairs, an object (or a function returning one of those options)']],
+  effects: [[either(is(Function), both(is(Array), all(isEffect))),
     'must be an array of key/value pairs (or a function returning an one)']],
   throttling: [[either(both(is(Array), all(is(Array))), is(Function)),
     'must be an array of key/value pairs (or a function returning an one)']],
   debouncing: [[either(both(is(Array), all(is(Array))), is(Function)),
     'must be an array of key/value pairs (or a function returning an one)']],
-  initialState: [[
-    anyPass([isPrimitiveish, isPlainObj, is(Function)]),
-    'must be an object, a function returning an object, or a primitive value'
-  ]]
+  initialState: [[anyPass([isPrimitiveish, isPlainObj, is(Function)]),
+    'must be an object, a function returning an object, or a primitive value']]
 }
 
 /**
@@ -115,8 +125,8 @@ export const duxRules = {
  * for validating a usable duck in the middleware function is less strict than those used to create a duck.
  */
 export const duckMiddlewareRules = {
-  store: [[isStringieThingie, 'must be a (non-blank) string']],
-  namespace: [[isStringieThingie, 'must be a (non-blank) string']],
+  store: [[isGoodString, 'must be a (non-blank) string']],
+  namespace: [[isGoodString, 'must be a (non-blank) string']],
   types: [
     [isPlainObj, 'must be an object'],
     [compose(
@@ -135,7 +145,7 @@ export const duckMiddlewareRules = {
     [compose(all(isEachTransitionAmongMachineStates), values), 'each transition value must also be a state']
   ],
   stateMachinesPropName: [[
-    both(is(Array), all(isStringieThingie)),
+    both(is(Array), all(isGoodString)),
     'must be an array of strings (representing the path to the "current state" prop)'
   ]]
 }

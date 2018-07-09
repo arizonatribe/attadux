@@ -74,7 +74,7 @@ export default (row, loggingEnabled = true) => {
           })
           .then(validatedAction => {
             if (validatedAction) {
-              const {enhancers = {}} = getDuckMatchingAction(validatedAction)
+              const {enhancers} = getDuckMatchingAction(validatedAction)
               return pipe(multiplyAction, enhanceAction(enhancers))(validatedAction)
             }
             return false

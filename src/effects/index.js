@@ -1,5 +1,6 @@
 import {
   __,
+  adjust,
   always,
   compose,
   cond,
@@ -156,19 +157,30 @@ export const makeResponseHandler = curry(
  * predicate) or a new Action that represents the succes of the effect or
  * alternatively it's failure
  */
-export const createEffectHandler = curry(
-  (pattern, effectHandler, successHandler, errorHandler, action) => when(
-    makePredicate(pattern),
-    tryCatch(
-      pipe(
-        effectHandler,
-        ifElse(
-          isPromise,
-          promise => promise.then(res => successHandler(res, action)).catch(err => errorHandler(err, action)),
-          res => successHandler(res, action)
-        )
-      ),
-      ex => errorHandler(ex, action)
-    )
-  )(action)
+export const makeEffectHandler = curry((effect, action) =>
+  pipe(
+    adjust(makePredicate, 0),
+    ([pattern, effectHandler, successHandler, errorHandler]) => [
+      makePredicate(pattern),
+      effectHandler,
+      makeResponseHandler(defaultSuccessHandler, successHandler),
+      makeResponseHandler(defaultErrorHandler, errorHandler)
+    ],
+    ([predicate, effectHandler, successHandler, errorHandler]) => when(
+      predicate,
+      tryCatch(
+        pipe(
+          effectHandler,
+          ifElse(
+            isPromise,
+            promise => promise
+              .then(res => successHandler(res, action))
+              .catch(err => errorHandler(err, action)),
+            res => successHandler(res, action)
+          )
+        ),
+        ex => errorHandler(ex, action)
+      )
+    )(action)
+  )(effect)
 )

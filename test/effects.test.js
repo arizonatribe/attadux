@@ -2,7 +2,7 @@
 import test from 'tape-promise/tape'
 import {always, pathEq, pathOr} from 'ramda'
 import {createDuck} from '../src'
-import {createEffectHandler, defaultErrorHandler, defaultSuccessHandler, makePredicate} from '../src/effects'
+import {makeEffectHandler, defaultErrorHandler, defaultSuccessHandler, makePredicate} from '../src/effects'
 
 const users = [{id: 1, name: 'Harry Potter'}, {id: 2, name: 'Ron Weasley'}, {id: 3, name: 'Hermione Granger'}]
 
@@ -94,7 +94,7 @@ test('"makePredicate"', (t) => {
   t.end()
 })
 
-test('"createEffectHandler"', (t) => {
+test('"makeEffectHandler"', (t) => {
   function sloppyEffect(action) {
     return {
       meta: {
@@ -110,7 +110,7 @@ test('"createEffectHandler"', (t) => {
       }
     }
   }
-  const handleRequest = createEffectHandler(/_EFFECT/i, sloppyEffect, defaultSuccessHandler, defaultErrorHandler)
+  const handleRequest = makeEffectHandler([/_EFFECT/i, sloppyEffect, defaultSuccessHandler, defaultErrorHandler])
   t.deepEqual(
     handleRequest({type: 'FORMAT_USER_FETCH_EFFECT'}),
     {type: 'FORMAT_USER_FETCH_ERROR', error: 'TypeError: Cannot read property \'config\' of undefined'},

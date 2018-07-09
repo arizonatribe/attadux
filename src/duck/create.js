@@ -1,5 +1,7 @@
 import {
   __,
+  adjust,
+  all,
   allPass,
   always,
   anyPass,
@@ -8,6 +10,7 @@ import {
   applyTo,
   assoc,
   assocPath,
+  both,
   call,
   compose,
   converge,
@@ -51,9 +54,17 @@ import {makeWorkers} from '../workers'
 import {makeQueries, copyRawQueriesToConsts} from '../queries'
 import {metadataEvolvers, isDux} from './schema'
 import {createTypes} from '../types'
-import {coerceToFn, isPlainObj, isNotEmpty, isStringieThingie} from '../util'
+import {
+  coerceToFn,
+  isEffect,
+  isEnhancer,
+  isNotEmpty,
+  isPlainObj,
+  isSpecOrFunction,
+  isStringieThingie
+} from '../util'
 import {createDuckSchemaValidator} from './validate'
-import {makeResponseHandler, defaultErrorHandler, defaultSuccessHandler, createEffectHandler} from '../effects'
+import {makeEffectHandler} from '../effects'
 import {
   createPayloadValidator,
   createPayloadValidationsLogger,
@@ -176,21 +187,8 @@ export const createDuckEffects =
         always([]),
         compose(
           objOf('effects'),
-          map(([pattern, effectHandler, successHandler, errorHandler]) =>
-            createEffectHandler(
-              pattern,
-              effectHandler || identity,
-              makeResponseHandler(defaultSuccessHandler, successHandler),
-              makeResponseHandler(defaultErrorHandler, errorHandler)
-            )
-          ),
-          filter(allPass([
-            is(Array),
-            pathSatisfies(anyPass([is(String), is(RegExp), is(Function)]), [0]),
-            pathSatisfies(is(Function), [1]),
-            pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [2]),
-            pathSatisfies(anyPass([isNil, isPlainObj, is(Function), is(String)]), [3])
-          ])),
+          map(makeEffectHandler),
+          filter(isEffect),
           converge(call, [
             compose(coerceToFn, path(['options', 'effects'])),
             identity
@@ -404,7 +402,16 @@ export const createDuckActionEnhancers = converge(mergeDeepRight, [
     always({}),
     compose(
       objOf('enhancers'),
-      map(makeEnhancers),
+      ifElse(
+        is(Array),
+        map(adjust(makeEnhancers, 1)),
+        map(makeEnhancers)
+      ),
+      ifElse(
+        isPlainObj,
+        filter(isSpecOrFunction),
+        filter(both(is(Array), all(isEnhancer)))
+      ),
       converge(call, [
         compose(coerceToFn, path(['options', 'enhancers'])),
         identity
