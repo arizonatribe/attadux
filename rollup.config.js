@@ -22,7 +22,7 @@ if (env === 'es' || env === 'cjs') {
 }
 
 if (env === 'development' || env === 'production') {
-  config.output = {format: 'umd', name: 'duckware', indent: false, exports: 'named'}
+  config.output = {format: 'umd', name: 'ruddy', indent: false, exports: 'named'}
   config.plugins.push(
     commonjs({
       include: [

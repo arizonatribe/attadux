@@ -10,7 +10,7 @@ test('lets the workers reference the duck instance', (t) => {
   const getUser = (id) => ({id, name: 'Huey', greeting: 'quack quack'})
   const strGetUser = `export ${getUser.toString()}`
   const duck = createDuck({
-    namespace: 'atta',
+    namespace: 'ruddy',
     store: 'users',
     types: ['FETCH'],
     workers: {add: strAdd, getUser, notAWorker: null}

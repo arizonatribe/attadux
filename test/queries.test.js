@@ -3,7 +3,7 @@ import {createDuck, extendDuck} from '../src/duck'
 
 test('lets the queries reference the duck instance', (t) => {
   const duck = createDuck({
-    namespace: 'atta',
+    namespace: 'ruddy',
     store: 'users',
     types: ['FETCH'],
     consts: {baseUrl: 'http://localhost'},

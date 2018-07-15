@@ -1,7 +1,7 @@
 {
-  "name": "duckware",
+  "name": "ruddy",
   "version": "0.3.0",
-  "description": "Implementation of the redux-modular-ducks, forked from the extensible-duck implementation and extended to include spected validators, state machines, helpers, web workers, effect handling, action multipliers, action enhancers, action throttling/debouncing, and to follow a broader/looser definition of constants",
+  "description": "Modularized state-management tools for modern front-end applications. Manage dispatched messages in a clean and predictable way for either small or large scale projects",
   "main": "cjs/index.js",
   "module": "es/index.js",
   "jsnext:main": "es/index.js",
@@ -13,18 +13,20 @@
     "prepublish": "npm run prepare",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir cjs",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/duckware.js",
-    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/duckware.min.js",
+    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development rollup -c -i src/index.js -o dist/ruddy.js",
+    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup -c -i src/index.js -o dist/ruddy.min.js",
     "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
     "prepare": "npm run clean && npm run lint && npm test & npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/arizonatribe/duckware.git"
+    "url": "https://github.com/arizonatribe/ruddy.git"
   },
   "keywords": [
-    "duckware",
+    "ruddy",
     "javascript",
+    "shapey",
+    "spected",
     "ramda",
     "redux",
     "reducer",
@@ -37,12 +39,14 @@
     "selector",
     "creator",
     "types",
+    "middleware",
+    "duckware",
     "ducks",
     "duck",
     "dux"
   ],
   "authors": [
-    "Andre Aizim Kelmanson (pre-fork author) <akelmanson@gmail.com>",
+    "Andre Aizim Kelmanson (pre-fork 'extensible-duck' author) <akelmanson@gmail.com>",
     "David Nunez <arizonatribe@gmail.com>"
   ],
   "license": "MIT",
